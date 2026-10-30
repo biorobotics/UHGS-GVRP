@@ -29,6 +29,16 @@
 #include <algorithm>
 #include "Client.h"
 #include "Vehicle.h"
+
+#include <pybind11/pybind11.h>
+#include <pybind11/numpy.h>
+#include <Eigen/Dense>
+
+using namespace Eigen;
+namespace py = pybind11;
+
+typedef Matrix<long, Dynamic, 1> VectorXl;
+
 using namespace std ;
 
 // little function used to clear some arrays
@@ -71,19 +81,9 @@ public:
 	string pathToBKS ;
 
 	// Problem type
-	/*
-	type =     // This lists the problems which can be solved with this algorithm
-			   30 CARP (Capacitated Arc Routing Problem)
-			   31 NEARP (Edges, Arcs and Nodes), also called MCGRP in the literature
-			   32 PCARP (Periodic CARP)
-			   33 MDCARP (Multi-depot CARP)
-			   34 NEARP-TP (NEARP with Turn penalties) --> also set the flag "TURN_PENALTIES" when compiling
-			   35 MM-kWRPP (Min-Max Windy Rural Postman Problem)
-			   */
 	int type ;
 	bool multiDepot ; // is there multiple depots in the problem
 	bool periodique ; // is there multiple periods in the problem
-	bool isTurnPenalties ; // is there turn penalties
 
 	int ar_NodesRequired ; // number of nodes which require a visit
 	int ar_NodesNonRequired ; // number of other nodes
@@ -103,10 +103,8 @@ public:
 	// the arc 0 is a fake arc which corresponds to the depot to himself
 	// the distance between an arc i and arc j is the sum of distances of these arcs with the turn penalties on the way.
 	int ar_nbArcsDistance ;
-	int ar_nbTurns ;
 	int ar_maxNbModes ;
 	vector < Arc > ar_Arcs ;
-	vector < vector < Arc * > > ar_correspondingArc ; // correspondingArc[i][j] returns a pointer to the associated arc between node i and j, otherwise, if non existing an error.
 	vector < vector < double > > ar_distanceArcs ;
 	void ar_computeDistancesArcs(); // computes the distance in the line graph
 
@@ -193,26 +191,13 @@ public:
 
 	// get the data from the stream
 	void preleveDonnees (string nomInstance) ;
-	void ar_parseOtherLinesCARP(); // some sub-procedures when reading the various instance formats
-	void ar_parseOtherLinesNEARP();
 	void ar_computeDistancesNodes();
-	void ar_parseOtherLinesNEARP_TP();
-	int ar_tempIndexDepot ;
-	int parsing_courNbArcs ;
 
 	// reading a customer from the stream
 	void getClient (int i, Client * myCli);
 
 	// builds the other data structures (granular search etc...)
 	void calculeStructures () ;
-
-	// sets the good patterns for a customer
-	// part of the instance definition in the PCARP
-	void setPatterns_PCARP(Client * myCli);
-
-	// Used to initialize the data structures for multi-depot problems
-	// Each depot is considered as a day (it works in the same way in the local search and all components of the method)
-	void processDataStructuresMD () ;
 	
 	// shuffle the lists of closest customers
 	void shuffleProches () ;

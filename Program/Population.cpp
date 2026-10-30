@@ -582,8 +582,9 @@ bool Population::solutionChecker(vector < vector < vector < int > > > & allRoute
 		existsOneFeasiblePattern = false ;
 		for (int p=0 ; p < (int)params->cli[i].visits.size() ; p++)
 		{
-			if (params->cli[i].visits[p].pat == currentPatterns[i] || (params->type == 33 && currentPatterns[i] > 0))
+			if (params->cli[i].visits[p].pat == currentPatterns[i]) {
 				existsOneFeasiblePattern = true ;
+      }
 		}
 		if (!existsOneFeasiblePattern)
 		{
@@ -642,20 +643,12 @@ bool Population::solutionChecker(vector < vector < vector < int > > > & allRoute
 			// For each route, sum the distances (case of the CARP)
 			routeCost = 0 ;
 			
-			if (!params->isTurnPenalties) // Case without turn penalties (using distances between nodes)
-			{
-			for (int i=0 ; i < (int)allRoutesArcs[d][r].size()-1; i++ )
-				routeCost += params->ar_distanceNodes[allRoutesArcs[d][r][i].second][allRoutesArcs[d][r][i+1].first] ;
-			} 
-			else                          // Case with turn penalties (using distances in the line graph)
-			{
-				for (int i=0 ; i < (int)allRoutesArcs[d][r].size()-1; i++ )
-				{
-					Arc * arc1 = params->cli[allRoutes[d][r][i]].getArc(allRoutesArcs[d][r][i].first,allRoutesArcs[d][r][i].second);
-					Arc * arc2 = params->cli[allRoutes[d][r][i+1]].getArc(allRoutesArcs[d][r][i+1].first,allRoutesArcs[d][r][i+1].second);
-					routeCost += params->ar_distanceArcs[arc1->indexArc][arc2->indexArc] ;
-				}
-			}
+      for (int i=0 ; i < (int)allRoutesArcs[d][r].size()-1; i++ )
+      {
+        Arc * arc1 = params->cli[allRoutes[d][r][i]].getArc(allRoutesArcs[d][r][i].first,allRoutesArcs[d][r][i].second);
+        Arc * arc2 = params->cli[allRoutes[d][r][i+1]].getArc(allRoutesArcs[d][r][i+1].first,allRoutesArcs[d][r][i+1].second);
+        routeCost += params->ar_distanceArcs[arc1->indexArc][arc2->indexArc] ;
+      }
 			for (int i=0 ; i < (int)allRoutesArcs[d][r].size(); i++ )
 			{
 				if (allRoutesArcs[d][r][i].first == params->cli[allRoutes[d][r][i]].ar_nodesExtr0)
@@ -669,7 +662,7 @@ bool Population::solutionChecker(vector < vector < vector < int > > > & allRoute
 		}
 	}
 
-	if ((params->type != 35 && totalCost != expectedCost) || (params->type == 35 && maxRouteLength != expectedMaxRoute))
+	if (totalCost != expectedCost)
 	{
 		cout << "SOLUTION CHECKER: Cost is not correct" << endl ;
 		return false ;
@@ -692,21 +685,9 @@ void Population::ExportBKS (string nomFichier)
 		fichier.close();
 		
 		// Testing if the best solution is better than the BKS
-		// If the problem is a classic CVRP, CARP, MDCARP which seeks to optimize the distance 
-		if (params->type != 32 && params->type != 35 && getIndividuBestValide () != NULL && getIndividuBestValide()->coutSol.evaluation < fit - 0.001)
+		if (getIndividuBestValide () != NULL && getIndividuBestValide()->coutSol.evaluation < fit - 0.001)
 		{
 			cout << "!!! New BKS !!! : distance = " << getIndividuBestValide()->coutSol.evaluation << " " <<  endl ;
-			ExportBest (nomFichier);
-		}
-		// If its a PCARP, main objective is fleet size, and then distance counts
-		else if (params->type == 32 && getIndividuBestValide () != NULL && (getIndividuBestValide()->nbRoutes < secondValue || (getIndividuBestValide()->nbRoutes == secondValue && getIndividuBestValide()->coutSol.evaluation < fit - 0.001)))
-		{
-			cout << "!!! New BKS !!! : fleet size = " << getIndividuBestValide()->nbRoutes << " | distance = " << getIndividuBestValide()->coutSol.evaluation << " " <<  endl ;
-			ExportBest (nomFichier);
-		}
-		else if (params->type == 35 && getIndividuBestValide () != NULL && getIndividuBestValide()->maxRoute < secondValue - 0.001)
-		{
-			cout << "!!! New BKS !!! : maximum route size = " << getIndividuBestValide()->maxRoute << endl ;
 			ExportBest (nomFichier);
 		}
 	}

@@ -39,22 +39,6 @@ public:
 	// bestCostArcs[i] contains the complete solution (all the path of arcs) when starting with the depot 0 and finishing with mode i
 	vector < vector < vector < pair<int,int> > > > bestCostArcs ;
 
-	#ifndef TURN_PENALTIES
-
-	// bestCost"i""j" returns the least cost to perform a sequence of visits starting with mode i and finishing with mode j
-	// for the CARP and NEARP, there are only two modes, so its simply a 2x2 matrix which is here hard coded to avoid the use of a lot of arrays or vectors
-	// Initialization for a single edge:
-	// bestCost01 corresponds to the direct way (direction in the instance file)
-	// bestCost10 corresponds to the other way, and is set to 1.20 if its a service to one arc
-	// (with this convention, bestCost00 corresponds to a sequence of visits starting with a visit in the direct way, and finishing with a visit in the reverse way)
-	// for a NEARP, if the delivery is a node delivery, then bestCost10 = bestCost01 = service cost.
-	double bestCost00 ;
-	double bestCost10 ;
-	double bestCost01 ;
-	double bestCost11 ;
-
-    #else
-
 	// More general version, which can deal with an unlimited number of service modes
 	// Used for problems with turn penalties
 	// bestCost[i][j] gives the best cost 
@@ -68,8 +52,6 @@ public:
 
 	// just to say if the structures are already created or not.
 	bool isInitialized ;
-
-    #endif
 
 	// Construction operators for data pre-processing
 	// The two last arguments of these functions (individual and day) are not needed in the CARP
