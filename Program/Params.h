@@ -173,7 +173,7 @@ public:
 	void shuffleProches () ;
 
 	// constructor
-	Params(string nomInstance, string nomSolution, string nomBKS, int seedRNG, int type, int nbVeh, int nbDep, bool isSearchingFeasible);
+	Params(int seedRNG, int nbVeh, double vc, const Ref<const VectorXd> &demand_per_cluster, double time_limit, bool take_first_soln, const std::vector<py::array_t<long>> &cluster_to_node_ptr, const Ref<const MatrixXd> &cost_mat, const Ref<const VectorXl> &node_to_cluster_ptr);
 
 	// destructor
 	~Params(void);
