@@ -412,7 +412,7 @@ void Population::ExportBest (string nomFichier)
 {
 	vector <int> rout ;
 	vector < vector < vector <int> > > allRoutes ; 
-	vector < vector < vector < pair <int> > > > allRoutesNodes ; 
+	vector < vector < vector <int> > > allRoutesNodes ; 
 	allRoutes.push_back(vector < vector <int> > ());
 	allRoutesNodes.push_back(vector < vector <int> > ()) ;
 	int compteur ;
@@ -446,16 +446,8 @@ void Population::ExportBest (string nomFichier)
 		cout.precision(10);
 		
 		// Writing the distance
-		if (params->type != 35)
-		{
-			cout << "Writing the best solution : distance : " << trainer->coutSol.distance ;
-			myfile << trainer->coutSol.distance << endl ;
-		}
-		else
-		{
-			cout << "Writing the best solution, maximum distance : " << bestValide->maxRoute ;
-			myfile << bestValide->maxRoute << endl ;
-		}
+    cout << "Writing the best solution : distance : " << trainer->coutSol.distance ;
+    myfile << trainer->coutSol.distance << endl ;
 
 		// Writing the number of routes
 		if (params->periodique)
@@ -614,10 +606,7 @@ bool Population::solutionChecker(vector < vector < vector < int > > > & allRoute
 			for (int i=0 ; i < (int)allRoutes[d][r].size(); i++ )
 			{
 				cour = allRoutes[d][r][i] ;
-				if (params->type != 33)
-					totalLoad += params->cli[cour].demandPatDay[currentPatterns[cour]][d] ;
-				else
-					totalLoad += params->cli[cour].demandPatDay[1][1] ;
+        totalLoad += params->cli[cour].demandPatDay[currentPatterns[cour]][d] ;
 			}
 			if (totalLoad < 0)
 			{
@@ -645,7 +634,7 @@ bool Population::solutionChecker(vector < vector < vector < int > > > & allRoute
       {
         int node_idx1 = allRoutesNodes[d][r][i];
         int node_idx2 = allRoutesNodes[d][r][i + 1];
-        routeCost += params->cost_mat[node_idx1][node_idx1] ;
+        routeCost += params->cost_mat[node_idx1][node_idx2] ;
       }
 			if (routeCost > maxRouteLength) // Updating the maximum route cost
 				maxRouteLength = routeCost ;

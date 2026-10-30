@@ -131,7 +131,7 @@ void Params::getClient (int i, Client * myCli)
 }
 
 // vc is vehicle capacity. Assume depot cluster is cluster 0 and depot node is node 0
-Params::Params(int seedRNG, int nbVeh, double vc, const Ref<const VectorXd> &demand_per_cluster, double time_limit, bool take_first_soln, const std::vector<py::array_t<long>> &cluster_to_node_ptr, const Ref<const MatrixXd> &cost_mat, const Ref<const VectorXl> &node_to_cluster_ptr):type(34), nbVehiculesPerDep(nbVeh), nbDepots(1), isSearchingFeasible(false)
+Params::Params(unsigned int seedRNG, int nbVeh, double vc, const Ref<const VectorXd> &demand_per_cluster, bool take_first_soln, const std::vector<py::array_t<long>> &cluster_to_node_ptr, const Ref<const MatrixXd> &cost_mat, const Ref<const VectorXl> &node_to_cluster_ptr):nbVehiculesPerDep(nbVeh), nbDepots(1), isSearchingFeasible(false)
 {
 	// Main constructor of Params
 	borne = 2.0 ;
@@ -149,8 +149,6 @@ Params::Params(int seedRNG, int nbVeh, double vc, const Ref<const VectorXd> &dem
 	totalDemand = 0 ;
 	multiDepot = false ;
 	periodique = false ;
-
-  type = 34;
 
   int num_clusters = cluster_to_node_ptr.size() - 1; // Not including depot
   int num_nodes = cost_mat.rows();

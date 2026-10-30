@@ -48,14 +48,14 @@ class Population
    // List to remember which of the 50 previous individuals were feasible in terms of max travel time
    list <bool> listeValiditeTemps ;
 
-   // Education procedure (LS)
-   void education(Individu * indiv);
-
    // Place an individual in the population
    // Returns its position
    int placeIndividu (SousPop * pop, Individu * indiv);
 
    public:
+
+   // Education procedure (LS)
+   void education(Individu * indiv);
 
    // Access to the parameters of the problem
    Params * params ;

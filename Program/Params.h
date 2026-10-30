@@ -72,7 +72,6 @@ public:
 	int seed ;
 
 	// Problem type
-	int type ;
 	bool multiDepot ; // is there multiple depots in the problem
 	bool periodique ; // is there multiple periods in the problem
 
@@ -81,7 +80,7 @@ public:
 	// the arc 0 is a fake arc which corresponds to the depot to himself
 	// the distance between an arc i and arc j is the sum of distances of these arcs with the turn penalties on the way.
 	int num_nodes ;
-	int ar_maxNbNodes ;
+	int ar_maxNbNodesPerClient ;
 	vector < vector < double > > cost_mat ;
 	void ar_computeClientToClientDistances();
 
@@ -173,7 +172,7 @@ public:
 	void shuffleProches () ;
 
 	// constructor
-	Params(int seedRNG, int nbVeh, double vc, const Ref<const VectorXd> &demand_per_cluster, double time_limit, bool take_first_soln, const std::vector<py::array_t<long>> &cluster_to_node_ptr, const Ref<const MatrixXd> &cost_mat, const Ref<const VectorXl> &node_to_cluster_ptr);
+	Params(unsigned int seedRNG, int nbVeh, double vc, const Ref<const VectorXd> &demand_per_cluster, bool take_first_soln, const std::vector<py::array_t<long>> &cluster_to_node_ptr, const Ref<const MatrixXd> &cost_mat, const Ref<const VectorXl> &node_to_cluster_ptr);
 
 	// destructor
 	~Params(void);
