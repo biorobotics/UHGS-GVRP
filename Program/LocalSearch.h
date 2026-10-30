@@ -31,28 +31,6 @@
 #include <math.h>
 using namespace std ;
 
-// Little structure for Ejection Chains
-struct EC_element {
-	
-	// Node that is represented
-	Noeud * myNode ;
-
-	// Position for insertion (case where the node is a depot)
-	Noeud * bestInsertionPlace ;
-
-	// Cost of the labels arriving here
-	double cost ;
-
-	// Predecessor in the best path
-	EC_element * pred ;
-
-	// Number of customers nodes in the chain (in case of equality, long chains are priviledged).
-	int nbCustNodesInChain ;
-
-	// ID of the route to which the node is associated
-	int routeID ;
-};
-
 // Local Search class
 class LocalSearch
 {
@@ -136,8 +114,6 @@ public:
 	int nbIntraSwap ;
 	int nbInter2Opt ;
 	int nbIntra2Opt ;
-	int nbEjectionChains ;
-	int nbEjectionChainsNodes ;
 
 	// for each day, keeping a pointer routeVide[day] on the first empty route (to avoid iterating many identical empty routes) 
 	// initially set to NULL
@@ -164,14 +140,6 @@ public:
 	// says that all moves involving the customer "cli" in the day "day" have been tested.
 	// to avoid testing them again as long as nothing has been modified
 	void nodeTestedForEachRoute (int cli, int day);
-
-	/* O(n²) VERSION OF EJECTION CHAINS */
-	// Picks a random order for the routes
-	// relies on some auxiliary graph structures to solve a shortest path sub-problem */
-	int ec_nbRoutes ;
-	vector < int > ec_nbElements ;
-	vector < vector < EC_element > > ejectionGraph ;
-	bool ejectionChains (int day); 	// returns true in case of success of ejection
 
 	/* ROUTINES USED TO MODIFY THE SOLUTION, WHEN APPLYING A MOVE */
 

@@ -213,8 +213,6 @@ int LocalSearch::mutationSameDay (int day)
 				nodeTestedForEachRoute(noeudU->cour,day);
 		}
 	}
-	// Calling the ejection chains at the end of the LS
-	nbMoves += ejectionChains(day);
 	return nbMoves ;
 }
 
@@ -1667,214 +1665,6 @@ void LocalSearch::reinitAllSingleDayMoves()
 				depots[k][route].route->nodeAndRouteTested[i] = false ;
 }
 
-bool compPredicateEC(EC_element * i,EC_element * j)
-{
-	return (i->cost < j->cost - 0.0001 || (i->cost < j->cost + 0.0001 && i->nbCustNodesInChain > j->nbCustNodesInChain));
-}
-
-bool LocalSearch::ejectionChains (int day)
-{
-	SeqData * seq = depots[day][0].seq0_i ;
-	int myNodeIndex ;
-	int myRouteIndex ;
-	Noeud * myNoeud ;
-	Vehicle * myVehicle ;
-	Noeud * myDepot ;
-	double myPrevCost ;
-	double myDeltaCost ;
-
-	// 1) CHOOSE AN ORDER FOR THE BINS
-	vector < Noeud * > ordreBins ;
-	for (int route = 0 ; route < params->nbVehiculesPerDep ; route ++)
-		ordreBins.push_back(&depots[day][route]);
-	std::random_shuffle(ordreBins.begin(),ordreBins.end());
-
-	// 2) UPDATE THE DATA STRUCTURE WILL ALL NECESSARY INFORMATIONS AND THE GOOD SIZE
-	myRouteIndex = 0 ;
-	for (int route = 0 ; route < params->nbVehiculesPerDep ; route ++)
-	{
-		myNoeud = ordreBins[route] ;
-		// if the route is not empty, this makes a new layer in the ejection chains graph
-		if (!myNoeud->suiv->estUnDepot)
-		{
-			ejectionGraph[myRouteIndex][0].myNode = myNoeud ;
-			ejectionGraph[myRouteIndex][0].cost = 1.e20 ;
-			ejectionGraph[myRouteIndex][0].pred = NULL ;
-			ejectionGraph[myRouteIndex][0].nbCustNodesInChain = 0 ;
-			ejectionGraph[myRouteIndex][0].routeID = route ;
-			myNoeud = myNoeud->suiv ;
-			myNodeIndex = 1 ;
-			while (!myNoeud->estUnDepot)
-			{
-				ejectionGraph[myRouteIndex][myNodeIndex].myNode = myNoeud ;
-				ejectionGraph[myRouteIndex][myNodeIndex].cost = 1.e20 ;
-				ejectionGraph[myRouteIndex][myNodeIndex].pred = NULL ;
-				ejectionGraph[myRouteIndex][myNodeIndex].nbCustNodesInChain = 0 ;
-				ejectionGraph[myRouteIndex][myNodeIndex].routeID = route ;
-				myNoeud = myNoeud->suiv ;
-				myNodeIndex ++ ;
-			}
-			ec_nbElements[myRouteIndex] = myNodeIndex ;
-			myRouteIndex ++ ;
-		}
-	}
-	ec_nbRoutes = myRouteIndex ;
-
-	if (ec_nbRoutes < 2)
-	{
-		//cout << "Only one route for EC, abort" << endl ;
-		return false ;
-	}
-
-	// 3) SOLVE THE SHORTEST PATH PROBLEM
-	// for each bin in order
-	for (int r=0 ; r < ec_nbRoutes ; r++)
-	{
-		myDepot = ejectionGraph[r][0].myNode ;
-		myVehicle = myDepot->route->vehicle ;
-		myPrevCost = myDepot->pred->seq0_i->evaluation(myDepot->pred->seq0_i,myVehicle); 
-
-		for (int rPrev=0 ; rPrev < r  ; rPrev ++)
-		{
-			// For the depot node, propagate from another previous depot node
-			if (ejectionGraph[rPrev][0].cost < ejectionGraph[r][0].cost - 0.0001 || 
-				(ejectionGraph[rPrev][0].cost < ejectionGraph[r][0].cost + 0.0001 && ejectionGraph[rPrev][0].nbCustNodesInChain > ejectionGraph[r][0].nbCustNodesInChain))
-			{
-				ejectionGraph[r][0].cost = ejectionGraph[rPrev][0].cost ;
-				ejectionGraph[r][0].pred = &ejectionGraph[rPrev][0] ;
-				ejectionGraph[r][0].bestInsertionPlace = NULL ;
-				ejectionGraph[r][0].nbCustNodesInChain = ejectionGraph[rPrev][0].nbCustNodesInChain ;
-			}
-
-			// for the depot node, propagate from any predecessor node
-			for (int iiPrev=1 ; iiPrev < ec_nbElements[rPrev] ; iiPrev++)
-			{
-				// for any such predecessor, test the best place of insertion in the route
-				for (int ii=0 ; ii < ec_nbElements[r] ; ii++)
-				{
-					myDeltaCost = seq->evaluation(ejectionGraph[r][ii].myNode->seq0_i,
-						ejectionGraph[rPrev][iiPrev].myNode->seq1,
-						ejectionGraph[r][ii].myNode->suiv->seqi_n,
-						myVehicle) - myPrevCost ; 
-					if (myDeltaCost + ejectionGraph[rPrev][iiPrev].cost < ejectionGraph[r][0].cost - 0.0001 || 
-						(myDeltaCost + ejectionGraph[rPrev][iiPrev].cost < ejectionGraph[r][0].cost + 0.0001 && ejectionGraph[rPrev][iiPrev].nbCustNodesInChain > ejectionGraph[r][0].nbCustNodesInChain))
-					{
-						ejectionGraph[r][0].cost = myDeltaCost + ejectionGraph[rPrev][iiPrev].cost ;
-						ejectionGraph[r][0].pred = &ejectionGraph[rPrev][iiPrev] ;
-						ejectionGraph[r][0].bestInsertionPlace = ejectionGraph[r][ii].myNode ;
-						ejectionGraph[r][0].nbCustNodesInChain = ejectionGraph[rPrev][iiPrev].nbCustNodesInChain ;
-					}
-				}
-			}
-		}
-
-		for (int ii=1 ; ii < ec_nbElements[r] ; ii++)
-		{
-			// for each customer node in the bin, propagate from the general 0 node
-			myDeltaCost = seq->evaluation(ejectionGraph[r][ii].myNode->pred->seq0_i,
-				ejectionGraph[r][ii].myNode->suiv->seqi_n,
-				myVehicle) - myPrevCost ;
-			if (myDeltaCost < ejectionGraph[r][ii].cost - 0.0001)
-			{
-				ejectionGraph[r][ii].cost = myDeltaCost ;
-				ejectionGraph[r][ii].pred = NULL ;
-				ejectionGraph[r][ii].bestInsertionPlace = NULL ;
-				ejectionGraph[r][ii].nbCustNodesInChain = 1 ;
-			}
-
-			// for each customer node in the bin, propagate from any previous 0 (depot) node.
-			for (int rPrev=0 ; rPrev < r  ; rPrev ++)
-			{
-				if (myDeltaCost + ejectionGraph[rPrev][0].cost < ejectionGraph[r][ii].cost - 0.0001 ||
-					(myDeltaCost + ejectionGraph[rPrev][0].cost < ejectionGraph[r][ii].cost + 0.0001 && ejectionGraph[rPrev][0].nbCustNodesInChain >= ejectionGraph[r][ii].nbCustNodesInChain))
-				{
-					ejectionGraph[r][ii].cost = myDeltaCost + ejectionGraph[rPrev][0].cost ;
-					ejectionGraph[r][ii].pred = &ejectionGraph[rPrev][0] ;
-					ejectionGraph[r][ii].bestInsertionPlace = NULL ;
-					ejectionGraph[r][ii].nbCustNodesInChain = ejectionGraph[rPrev][0].nbCustNodesInChain + 1 ;
-				}
-			}
-
-			// for each customer node in the bin, propagate from a previous customer node.
-			for (int rPrev=0 ; rPrev < r  ; rPrev ++)
-			{
-				for (int iiPrev=1 ; iiPrev < ec_nbElements[rPrev] ; iiPrev++)
-				{
-					myDeltaCost = seq->evaluation(ejectionGraph[r][ii].myNode->pred->seq0_i,
-						ejectionGraph[rPrev][iiPrev].myNode->seq1,
-						ejectionGraph[r][ii].myNode->suiv->seqi_n,
-						myVehicle) - myPrevCost ;
-
-					if (myDeltaCost + ejectionGraph[rPrev][iiPrev].cost < ejectionGraph[r][ii].cost - 0.0001 ||
-						(myDeltaCost + ejectionGraph[rPrev][iiPrev].cost < ejectionGraph[r][ii].cost + 0.0001 &&  ejectionGraph[rPrev][iiPrev].nbCustNodesInChain >= ejectionGraph[r][ii].nbCustNodesInChain))
-					{
-						ejectionGraph[r][ii].cost = myDeltaCost + ejectionGraph[rPrev][iiPrev].cost ;
-						ejectionGraph[r][ii].pred = &ejectionGraph[rPrev][iiPrev] ;
-						ejectionGraph[r][ii].bestInsertionPlace = NULL ;
-						ejectionGraph[r][ii].nbCustNodesInChain = ejectionGraph[rPrev][iiPrev].nbCustNodesInChain + 1 ;
-					}
-				}
-			}
-		}
-	}
-
-	// 4) KEEP THE BEST SHORTEST PATHS in increasing order of costs.
-	vector <EC_element *> orderEnds ;
-	for (int r=1 ; r < ec_nbRoutes ; r++)
-		orderEnds.push_back(&ejectionGraph[r][0]);
-	std::sort(orderEnds.begin(),orderEnds.end(),compPredicateEC);
-
-	// 5) APPLY THE MOVES TO UPDATE THE SOLUTION (track back the nodes and apply successive relocates).
-	// Apply the best chain
-	if (orderEnds[0]->cost < -0.0001)
-	{
-		EC_element * elementCour ;
-		EC_element * elementPred ;
-		//cout << "----------------- EJECTION CHAINS PHASE ---------------" << endl ;
-		for (int myID = 0 ; myID < 1 ; myID++)
-		{
-			nbEjectionChains ++ ;
-			nbEjectionChainsNodes += orderEnds[myID]->nbCustNodesInChain ;
-			elementCour = orderEnds[myID];
-			elementPred = elementCour->pred ;
-			Noeud * insertionPosition = NULL;
-			Noeud * insertionPositionTemp = NULL;
-			while (elementCour != NULL)
-			{
-				if (!(elementPred == NULL || elementPred->myNode->estUnDepot)) 
-				{
-					//before is a node, after is a depot (insert in the best location, and keep track of where he was.)
-					if (elementCour->myNode->estUnDepot)
-					{
-						insertionPosition = elementPred->myNode->pred ;		
-						insertNoeud(elementPred->myNode,elementCour->bestInsertionPlace);
-						reinitSingleDayMoves(elementCour->bestInsertionPlace->route);
-						reinitSingleDayMoves(insertionPosition->route);
-						elementCour->bestInsertionPlace->route->updateRouteData(false);
-						insertionPosition->route->updateRouteData(false);
-					}
-					else // before is a node, after is a node
-					{
-						insertionPositionTemp = elementPred->myNode->pred ;
-						insertNoeud(elementPred->myNode,insertionPosition);
-						reinitSingleDayMoves(insertionPosition->route);
-						reinitSingleDayMoves(insertionPositionTemp->route);
-						insertionPosition->route->updateRouteData(false);
-						insertionPositionTemp->route->updateRouteData(false);
-						insertionPosition = insertionPositionTemp ;
-					}
-				}
-				elementCour = elementPred ;
-				if (elementPred != NULL) elementPred = elementCour->pred ;
-			}
-		}
-		setRouteVide(day);
-		return true ;
-	}
-	else
-		return false ;
-}
-
 void LocalSearch::addSeqDataInPieces (Noeud * node, int length, int day)
 {
 	Noeud * cour = node ;
@@ -1926,8 +1716,6 @@ LocalSearch::LocalSearch(Params * params,Individu * individu) : params (params),
 	nbIntraSwap = 0 ;
 	nbInter2Opt = 0 ;
 	nbIntra2Opt = 0 ;
-	nbEjectionChains = 0 ;
-	nbEjectionChainsNodes = 0 ;
 	seqdeb = NULL ;
 	nbTotalRISinceBeginning = 0 ;
 	nbTotalPISinceBeginning = 0 ;
@@ -1975,11 +1763,6 @@ LocalSearch::LocalSearch(Params * params,Individu * individu) : params (params),
 
 	for (int i=params->nbDepots ; i < params->nbDepots + params->nbClients ; i++)
 		ordreParcours[0].push_back(i);
-
-	// Initialization for ejection chains
-	for (int v=0 ; v < params->nbVehiculesPerDep ; v ++)
-		ejectionGraph.push_back(vector <EC_element> (params->nbClients+1));
-	ec_nbElements = vector <int> (params->nbVehiculesPerDep);
 
 	// Initialization of the SeqData structures, for all nodes
 	// These structures were designed to stay contiguous in memory (however it had only a negligible impact on performance)
