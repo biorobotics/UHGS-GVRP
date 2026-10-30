@@ -171,8 +171,10 @@ public:
 	// shuffle the lists of closest customers
 	void shuffleProches () ;
 
+  double cost_thresh;
+
 	// constructor
-	Params(unsigned int seedRNG, int nbVeh, double vc, const Ref<const VectorXd> &demand_per_cluster, bool take_first_soln, const std::vector<py::array_t<long>> &cluster_to_node_ptr, const Ref<const MatrixXd> &cost_mat);
+	Params(unsigned int seedRNG, int nbVeh, double vc, const Ref<const VectorXd> &demand_per_cluster, bool take_first_soln, const std::vector<py::array_t<long>> &cluster_to_node_ptr, const Ref<const MatrixXd> &cost_mat, double cost_thresh);
 
 	// destructor
 	~Params(void);

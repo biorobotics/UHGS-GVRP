@@ -53,6 +53,11 @@ void Genetic::evolveHGA (int maxIterNonProd, int nbRec)
 
 	while (nbIterNonProd < maxIterNonProd && (clock() - debut <= ticks) && (!params->isSearchingFeasible || population->getIndividuBestValide() == NULL))
 	{
+    if (population->getIndividuBestValide() != NULL && population->getIndividuBestValide()->coutSol.distance < params->cost_thresh) {
+      std::cout << "Returning because we found a solution with cost lower than the provided threshold" << std::endl;
+      std::cout << "Cost is " << population->getIndividuBestValide()->coutSol.distance << std::endl;
+      break;
+    }
 		// CROSSOVER
 		parent1 = population->getIndividuBinT(); // Pick two individuals per binary tournament
 		parent2 = population->getIndividuBinT(); // Pick two individuals per binary tournament

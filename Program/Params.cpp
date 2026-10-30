@@ -131,7 +131,7 @@ void Params::getClient (int i, Client * myCli)
 }
 
 // vc is vehicle capacity. Assume depot cluster is cluster 0 and depot node is node 0
-Params::Params(unsigned int seedRNG, int nbVeh, double vc, const Ref<const VectorXd> &demand_per_cluster, bool take_first_soln, const std::vector<py::array_t<long>> &cluster_to_node_ptr, const Ref<const MatrixXd> &cost_mat):nbVehiculesPerDep(nbVeh), nbDepots(1), isSearchingFeasible(false)
+Params::Params(unsigned int seedRNG, int nbVeh, double vc, const Ref<const VectorXd> &demand_per_cluster, bool take_first_soln, const std::vector<py::array_t<long>> &cluster_to_node_ptr, const Ref<const MatrixXd> &cost_mat, double cost_thresh):nbVehiculesPerDep(nbVeh), nbDepots(1), isSearchingFeasible(false), cost_thresh(cost_thresh)
 {
 	// Main constructor of Params
 	borne = 2.0 ;
@@ -210,14 +210,18 @@ Params::Params(unsigned int seedRNG, int nbVeh, double vc, const Ref<const Vecto
 		this->cost_mat[i][i] = 0 ; 
   }
 
-  // TODO: this comment was in the original code. Is there something that assumes this elsewhere?
+  // TODO: this comment was in the original code. Is there something that assumes this elsewhere? Yes, because if I take out the i != j condition below,
+  // we get the message "Increasing the capacity violation limit in Split." Why are we ever using cost_mat[i][i] for any i?
+
 	// distance of any connected pair of edges with a connected at the depot location should have a turn penalty of 0
 
 	for (int i=0 ; i < num_nodes ; i++)
 	{
 		for (int j=0 ; j < num_nodes ; j++)
 		{
-      this->cost_mat[i][j] = cost_mat(i, j);
+      if (i != j) {
+        this->cost_mat[i][j] = cost_mat(i, j);
+      }
 		}
 	}
 
