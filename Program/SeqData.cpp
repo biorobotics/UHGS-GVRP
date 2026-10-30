@@ -29,16 +29,16 @@ SeqData::SeqData(Params * params)
 	firstNode = -1 ;
 	lastNode = -1 ;
 
-	distanceTemp = vector < double > (params->ar_maxNbModes);
-	distanceTemp2 = vector < double > (params->ar_maxNbModes);
+	distanceTemp = vector < double > (params->ar_maxNbNodesPerClient);
+	distanceTemp2 = vector < double > (params->ar_maxNbNodesPerClient);
 
-	bestCost = vector < vector < double > > (params->ar_maxNbModes) ;
-	for (int i=0 ; i < params->ar_maxNbModes ; i++)
-		bestCost[i] =  vector < double > (params->ar_maxNbModes);
+	bestCost = vector < vector < double > > (params->ar_maxNbNodesPerClient) ;
+	for (int i=0 ; i < params->ar_maxNbNodesPerClient ; i++)
+		bestCost[i] =  vector < double > (params->ar_maxNbNodesPerClient);
 
-	bestCostArcs = vector < vector < vector < pair<int,int> > > > (params->ar_maxNbModes) ;
-	for (int i=0 ; i < params->ar_maxNbModes ; i++)
-		bestCostArcs[i] = vector < vector < pair<int,int> > > (params->ar_maxNbModes);
+	bestCostNodes = vector < vector < vector <int> > > (params->ar_maxNbNodesPerClient) ;
+	for (int i=0 ; i < params->ar_maxNbNodesPerClient ; i++)
+		bestCostNodes[i] = vector < vector <int> > (params->ar_maxNbNodesPerClient);
 
 	isInitialized = true ;
 }
@@ -60,20 +60,20 @@ void SeqData::initialisation(int Ucour, Params * mesParams, Individu * myIndiv, 
 
 	if (!isInitialized)
 	{
-		bestCost = vector < vector <double> > (params->ar_maxNbModes) ;
-		distanceTemp = vector < double > (params->ar_maxNbModes);
-		distanceTemp2 = vector < double > (params->ar_maxNbModes);
-		for (int i=0 ; i < params->ar_maxNbModes ; i++)
-			bestCost[i] =  vector <double> (params->ar_maxNbModes);
-		bestCostArcs = vector < vector < vector < pair<int,int> > > > (params->ar_maxNbModes) ;
-		for (int i=0 ; i < params->ar_maxNbModes ; i++)
-			bestCostArcs[i] = vector < vector < pair<int,int> > > (params->ar_maxNbModes);
+		bestCost = vector < vector <double> > (params->ar_maxNbNodesPerClient) ;
+		distanceTemp = vector < double > (params->ar_maxNbNodesPerClient);
+		distanceTemp2 = vector < double > (params->ar_maxNbNodesPerClient);
+		for (int i=0 ; i < params->ar_maxNbNodesPerClient ; i++)
+			bestCost[i] =  vector <double> (params->ar_maxNbNodesPerClient);
+		bestCostNodes = vector < vector < vector <int> > > (params->ar_maxNbNodesPerClient) ;
+		for (int i=0 ; i < params->ar_maxNbNodesPerClient ; i++)
+			bestCostNodes[i] = vector < vector <int> > (params->ar_maxNbNodesPerClient);
 		isInitialized = true ;
 	}
 
-	for (int i=0 ; i < params->cli[Ucour].ar_nbModes ; i++)
+	for (int i=0 ; i < params->cli[Ucour].ar_nbNodes ; i++)
 	{
-		for (int j=0 ; j < params->cli[Ucour].ar_nbModes ; j ++)
+		for (int j=0 ; j < params->cli[Ucour].ar_nbNodes ; j ++)
 		{
 			if (i == j) 
 				bestCost[i][j] = 0.0 ;
@@ -84,13 +84,13 @@ void SeqData::initialisation(int Ucour, Params * mesParams, Individu * myIndiv, 
 
 	if (isForPathTracking)
 	{
-		for (int i=0 ; i < params->cli[Ucour].ar_nbModes ; i++)
+		for (int i=0 ; i < params->cli[Ucour].ar_nbNodes ; i++)
 		{
-			for (int j=0 ; j < params->cli[Ucour].ar_nbModes ; j ++)
+			for (int j=0 ; j < params->cli[Ucour].ar_nbNodes ; j ++)
 			{
-				bestCostArcs[i][j].clear();
+				bestCostNodes[i][j].clear();
 				if (i == j) 
-					bestCostArcs[i][j].push_back(pair<int,int>(params->cli[Ucour].ar_Modes[i]->nodeBegin,params->cli[Ucour].ar_Modes[i]->nodeEnd));
+					bestCostNodes[i][j].push_back(params->cli[Ucour].ar_Nodes[i]);
 			}
 		}
 	}
@@ -108,14 +108,14 @@ void SeqData::concatOneAfter(SeqData * seq, int Vcour, Individu * myIndiv, int d
 	Client * vCourCli = &params->cli[Vcour] ;
 	distance = 1.e20 ;
 
-	for (int i=0 ; i < firstCli->ar_nbModes ; i++)
+	for (int i=0 ; i < firstCli->ar_nbNodes ; i++)
 	{
-		for (int j=0 ; j < vCourCli->ar_nbModes ; j++)
+		for (int j=0 ; j < vCourCli->ar_nbNodes ; j++)
 		{
 			bestCost[i][j] = 1.e30 ;
-			for (int k=0 ; k < lastCli->ar_nbModes ; k++)
+			for (int k=0 ; k < lastCli->ar_nbNodes ; k++)
 			{
-				tempc = seq->bestCost[i][k] + params->ar_distanceArcs[lastCli->ar_Modes[k]->indexArc][vCourCli->ar_Modes[j]->indexArc] ;
+				tempc = seq->bestCost[i][k] + params->cost_mat[lastCli->ar_Nodes[k]][vCourCli->ar_Nodes[j]] ;
 				if (tempc < bestCost[i][j]) bestCost[i][j] = tempc;
 				if (tempc < distance) distance = tempc ;
 			}
@@ -135,15 +135,15 @@ void SeqData::concatOneAfterWithPathTracking(SeqData * seq, int Vcour, Individu 
 	Client * vCourCli = &params->cli[Vcour] ;
 	distance = 1.e20 ;
 
-	for (int i=0 ; i < firstCli->ar_nbModes ; i++)
+	for (int i=0 ; i < firstCli->ar_nbNodes ; i++)
 	{
-		for (int j=0 ; j < vCourCli->ar_nbModes ; j++)
+		for (int j=0 ; j < vCourCli->ar_nbNodes ; j++)
 		{
 			bestCost[i][j] = 1.e30 ;
 			int myK = -1;
-			for (int k=0 ; k < lastCli->ar_nbModes ; k++)
+			for (int k=0 ; k < lastCli->ar_nbNodes ; k++)
 			{
-				tempc = seq->bestCost[i][k] + params->ar_distanceArcs[lastCli->ar_Modes[k]->indexArc][vCourCli->ar_Modes[j]->indexArc] ;
+				tempc = seq->bestCost[i][k] + params->cost_mat[lastCli->ar_Nodes[k]][vCourCli->ar_Nodes[j]] ;
 				if (tempc < bestCost[i][j]) 
 				{
 					bestCost[i][j] = tempc ;
@@ -157,9 +157,9 @@ void SeqData::concatOneAfterWithPathTracking(SeqData * seq, int Vcour, Individu 
 				cout << "Issue undetermined K during Label propagation" << endl ;
 				throw string ("Issue undetermined K during Label propagation");
 			}
-			bestCostArcs[i][j].clear();
-			bestCostArcs[i][j] = seq->bestCostArcs[i][myK] ;
-			bestCostArcs[i][j].push_back(pair<int,int>(params->cli[Vcour].ar_Modes[j]->nodeBegin,params->cli[Vcour].ar_Modes[j]->nodeEnd));
+			bestCostNodes[i][j].clear();
+			bestCostNodes[i][j] = seq->bestCostNodes[i][myK] ;
+			bestCostNodes[i][j].push_back(params->cli[Vcour].ar_Nodes[j]);
 		}
 	}
 
@@ -177,14 +177,14 @@ void SeqData::concatOneBefore(SeqData * seq,int Vcour, Individu * myIndiv, int d
 	Client * vCourCli = &params->cli[Vcour] ;
 	distance = 1.e20 ;
 
-	for (int i=0 ; i < vCourCli->ar_nbModes ; i++)
+	for (int i=0 ; i < vCourCli->ar_nbNodes ; i++)
 	{
-		for (int j=0 ; j < lastCli->ar_nbModes ; j++)
+		for (int j=0 ; j < lastCli->ar_nbNodes ; j++)
 		{
 			bestCost[i][j] = 1.e30 ;
-			for (int k=0 ; k < firstCli->ar_nbModes ; k++)
+			for (int k=0 ; k < firstCli->ar_nbNodes ; k++)
 			{
-				tempc = params->ar_distanceArcs[vCourCli->ar_Modes[i]->indexArc][firstCli->ar_Modes[k]->indexArc] + seq->bestCost[k][j] ;
+				tempc = params->cost_mat[vCourCli->ar_Nodes[i]][firstCli->ar_Nodes[k]] + seq->bestCost[k][j] ;
 				if (tempc < bestCost[i][j]) bestCost[i][j] = tempc ;
 				if (tempc < distance) distance = tempc ;
 			}
@@ -210,12 +210,12 @@ double SeqData::evaluation(SeqData * seq1, SeqData * seq2, Vehicle * vehicle)
 	double bestc = 1.e30 ;
 	double tempc ;
 
-	for (int i=0 ; i < cli1->ar_nbModes ; i++)
+	for (int i=0 ; i < cli1->ar_nbNodes ; i++)
 	{
-		for (int j=0 ; j < cli2->ar_nbModes ; j++)
+		for (int j=0 ; j < cli2->ar_nbNodes ; j++)
 		{
 			tempc = seq1->bestCost[0][i] +
-				params->ar_distanceArcs[cli1->ar_Modes[i]->indexArc][cli2->ar_Modes[j]->indexArc]
+				params->cost_mat[cli1->ar_Nodes[i]][cli2->ar_Nodes[j]]
 			+ seq2->bestCost[j][0] ;
 			if (tempc < bestc) bestc = tempc ;
 		}
@@ -231,12 +231,12 @@ double SeqData::evaluation(SeqData * seq1, SeqData * seq2, Vehicle * vehicle, do
 	double bestc = 1.e30 ;
 	double tempc ;
 
-	for (int i=0 ; i < cli1->ar_nbModes ; i++)
+	for (int i=0 ; i < cli1->ar_nbNodes ; i++)
 	{
-		for (int j=0 ; j < cli2->ar_nbModes ; j++)
+		for (int j=0 ; j < cli2->ar_nbNodes ; j++)
 		{
 			tempc = seq1->bestCost[0][i] +
-				params->ar_distanceArcs[cli1->ar_Modes[i]->indexArc][cli2->ar_Modes[j]->indexArc]
+				params->cost_mat[cli1->ar_Nodes[i]][cli2->ar_Nodes[j]]
 			+ seq2->bestCost[j][0] ;
 			if (tempc < bestc) bestc = tempc ;
 		}
@@ -261,21 +261,21 @@ double SeqData::evaluation(SeqData * seq1, SeqData * seq2, SeqData * seq3, Vehic
 	double tempc ;
 
   // Compute cost-to-come to each mode at cliFirst2
-	for (int i=0 ; i < cliFirst2->ar_nbModes ; i++)
+	for (int i=0 ; i < cliFirst2->ar_nbNodes ; i++)
 	{
 		distanceTemp2[i] = 1.e30 ;
-		for (int k=0 ; k < cliLast1->ar_nbModes ; k++)
+		for (int k=0 ; k < cliLast1->ar_nbNodes ; k++)
 		{
-			tempc = seq1->bestCost[0][k] + params->ar_distanceArcs[cliLast1->ar_Modes[k]->indexArc][cliFirst2->ar_Modes[i]->indexArc] ;
+			tempc = seq1->bestCost[0][k] + params->cost_mat[cliLast1->ar_Nodes[k]][cliFirst2->ar_Nodes[i]] ;
 			if (tempc < distanceTemp2[i]) distanceTemp2[i] = tempc ;
 		}
 	}
 
   // Compute cost-to-come to each mode at cliLast2
-	for (int i=0 ; i < cliLast2->ar_nbModes ; i++)
+	for (int i=0 ; i < cliLast2->ar_nbNodes ; i++)
 	{
 		distanceTemp[i] = 1.e30 ;
-		for (int k=0 ; k < cliFirst2->ar_nbModes ; k++)
+		for (int k=0 ; k < cliFirst2->ar_nbNodes ; k++)
 		{
 			tempc = distanceTemp2[k] + seq2->bestCost[k][i] ;
 			if (tempc < distanceTemp[i]) distanceTemp[i] = tempc ;
@@ -284,12 +284,12 @@ double SeqData::evaluation(SeqData * seq1, SeqData * seq2, SeqData * seq3, Vehic
 
   // Compute cost
 	bestc = 1.e30 ;
-	for (int i=0 ; i < cliLast2->ar_nbModes ; i++)
+	for (int i=0 ; i < cliLast2->ar_nbNodes ; i++)
 	{
-		for (int j=0 ; j < cliFirst3->ar_nbModes ; j++)
+		for (int j=0 ; j < cliFirst3->ar_nbNodes ; j++)
 		{
 			tempc = distanceTemp[i] 
-			+ params->ar_distanceArcs[cliLast2->ar_Modes[i]->indexArc][cliFirst3->ar_Modes[j]->indexArc]
+			+ params->cost_mat[cliLast2->ar_Nodes[i]][cliFirst3->ar_Nodes[j]]
 			+ seq3->bestCost[j][0] ;
 			if (tempc < bestc) bestc = tempc ;
 		}
@@ -331,20 +331,20 @@ double SeqData::evaluation(vector <SeqData *> seqs, Vehicle * vehicle)
 		cliLast = &params->cli[seqb->lastNode] ;
 		loadTemp += seqb->load ;
 
-		for (int i=0 ; i < cliFirst->ar_nbModes ; i++)
+		for (int i=0 ; i < cliFirst->ar_nbNodes ; i++)
 		{
 			distanceTemp2[i] = 1.e30 ;
-			for (int k=0 ; k < cliPredLast->ar_nbModes ; k++)
+			for (int k=0 ; k < cliPredLast->ar_nbNodes ; k++)
 			{
-				tempc = distanceTemp[k] + params->ar_distanceArcs[cliPredLast->ar_Modes[k]->indexArc][cliFirst->ar_Modes[i]->indexArc] ;
+				tempc = distanceTemp[k] + params->cost_mat[cliPredLast->ar_Nodes[k]][cliFirst->ar_Nodes[i]] ;
 				if (tempc < distanceTemp2[i]) distanceTemp2[i] = tempc ;
 			}
 		}
 
-		for (int i=0 ; i < cliLast->ar_nbModes ; i++)
+		for (int i=0 ; i < cliLast->ar_nbNodes ; i++)
 		{
 			distanceTemp[i] = 1.e30 ;
-			for (int k=0 ; k < cliFirst->ar_nbModes ; k++)
+			for (int k=0 ; k < cliFirst->ar_nbNodes ; k++)
 			{
 				tempc = distanceTemp2[k] + seqb->bestCost[k][i] ;
 				if (tempc < distanceTemp[i]) distanceTemp[i] = tempc ;

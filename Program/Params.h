@@ -71,42 +71,19 @@ public:
 	// random seed
 	int seed ;
 
-	// path to the instance
-	string pathToInstance ;
-
-	// path to the solution
-	string pathToSolution ;
-
-	// path to the BKS (just to read the value and overwrite if needed)
-	string pathToBKS ;
-
 	// Problem type
 	int type ;
 	bool multiDepot ; // is there multiple depots in the problem
 	bool periodique ; // is there multiple periods in the problem
 
-	int ar_NodesRequired ; // number of nodes which require a visit
-	int ar_NodesNonRequired ; // number of other nodes
-	int ar_EdgesRequired ; // number of edges which require a visit
-	int ar_EdgesNonRequired ; // number of other edges
-	int ar_ArcsRequired ; // number of arcs which require a visit
-	int ar_ArcsNonRequired ; // number of other arcs
-
-	// shortest paths between nodes of the original network
-	// to keep the things clearer we don't use the "0 node", every index starts from one
-	// the depot is among these nodes.
-	void ar_InitializeDistanceNodes() ;
-	vector < vector < double > > ar_distanceNodes ;
-
 	/* CASE OF VEHICLE ROUTING PROBLEMS WITH TURN PENALTIES */
 	// paths between arcs in the original network
 	// the arc 0 is a fake arc which corresponds to the depot to himself
 	// the distance between an arc i and arc j is the sum of distances of these arcs with the turn penalties on the way.
-	int ar_nbArcsDistance ;
-	int ar_maxNbModes ;
-	vector < Arc > ar_Arcs ;
-	vector < vector < double > > ar_distanceArcs ;
-	void ar_computeDistancesArcs(); // computes the distance in the line graph
+	int num_nodes ;
+	int ar_maxNbNodes ;
+	vector < vector < double > > cost_mat ;
+	void ar_computeClientToClientDistances();
 
 	// number of customers/services considered in the vehicle routing problem
 	int nbClients ;
@@ -183,15 +160,8 @@ public:
 
 	/* ------------------------  PARSING ROUTINES  -------------------- */
 
-	// incoming data stream
-	ifstream fichier ;
-
 	// setting the parameters of the method
 	void setMethodParams () ;
-
-	// get the data from the stream
-	void preleveDonnees (string nomInstance) ;
-	void ar_computeDistancesNodes();
 
 	// reading a customer from the stream
 	void getClient (int i, Client * myCli);

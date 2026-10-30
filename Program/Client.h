@@ -103,14 +103,9 @@ class Client
 	int ar_nodesExtr0 ;
 	int ar_nodesExtr1 ;
 
-	// Service cost on the edge may depend on the direction
-	double ar_serviceCost01 ;
-	double ar_serviceCost10 ;
-
 	// For NEARP with turn penalties, the number of modes is defined (1 for a service on an arc, 2 for an edge, more for a node in the presence of turn penalties)
-	int ar_nbModes ;
-	vector <Arc *> ar_Modes ;
-	Arc * getArc (int i, int j); // Returns the pointer towards the arc from the information of its endpoints (brute force), or NULL if failure to find
+	int ar_nbNodes ;
+	vector <int> ar_Nodes ;
 
 	// list of all possible visit combinations (multi-period problems)
 	// Each visit combination is coded with the decimal equivalent of

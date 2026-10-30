@@ -39,10 +39,6 @@ void Params::setMethodParams()
 	{ mu = 5 ; lambda = 5 ; el = 1 ; minValides = 0.6 ; maxValides = 0.7 ; }
 }
 
-void Params::preleveDonnees ()
-{
-}
-
 bool compPredicate(pairB i, pairB j) 
 { 
 	return (i.myparams->timeCost[i.myInt][i.iCour] < i.myparams->timeCost[j.myInt][i.iCour]) ;
@@ -157,6 +153,7 @@ Params::Params(int seedRNG, int nbVeh, double vc, const Ref<const VectorXd> &dem
   type = 34;
 
   int num_clusters = cluster_to_node_ptr.size() - 1; // Not including depot
+  int num_nodes = cost_mat.rows();
 
 	// Setting the other instance parameters
 	nbDays = 1 ;
@@ -190,18 +187,11 @@ Params::Params(int seedRNG, int nbVeh, double vc, const Ref<const VectorXd> &dem
 
   // Formerly the code from ar_parseOtherLinesNEARP_TP();
 
-  ar_nbArcsDistance = cost_mat.rows();
-  ar_Arcs = vector <Arc> (ar_nbArcsDistance) ;
-  vector <Arc*> myTempVect = vector <Arc*> (1 + num_clusters, NULL) ;
+  num_nodes = cost_mat.rows();
 
 	/* FIRST SPECIFY THE DEPOT CHARACTERISTICS */
-	ar_Arcs[0].indexArc = 0 ;
-	ar_Arcs[0].cost = 0 ;
-	ar_Arcs[0].nb_Turns = 0 ;
-	ar_Arcs[0].nodeBegin = 0 ;
-	ar_Arcs[0].nodeEnd = 0 ;
-	cli[0].ar_Modes.push_back(&ar_Arcs[0]);
-	cli[0].ar_nbModes = 1 ;
+	cli[0].ar_Nodes.push_back(0);
+	cli[0].ar_nbNodes = 1 ;
 
 	/* THEN READ THE CHARACTERISTICS OF THE NODE SERVICES */
 	for (int i=1 ; i <= num_clusters; i++)
@@ -211,55 +201,47 @@ Params::Params(int seedRNG, int nbVeh, double vc, const Ref<const VectorXd> &dem
     totalDemand += cli[i].demand ;
 	}
 
-  for (int i=1 ; i < cost_mat.rows(); i++)
-	{
-		ar_Arcs[i].indexArc = i ;
-		ar_Arcs[i].nodeBegin = i ;
-		ar_Arcs[i].nodeEnd = i ;
-		ar_Arcs[i].cost = 0. ;
-	}
-
 	/* BUILDING THE ARC DISTANCE STRUCTURES */
 
-	ar_distanceArcs.resize(ar_nbArcsDistance);
-	for (int i=0 ; i < ar_nbArcsDistance ; i++) {
-		ar_distanceArcs[i] = std::vector<double>(ar_nbArcsDistance, 1.e20);
+	this->cost_mat.resize(num_nodes);
+	for (int i=0 ; i < num_nodes ; i++) {
+		this->cost_mat[i] = std::vector<double>(num_nodes, 1.e20);
   }
 
-	for (int i=0 ; i < ar_nbArcsDistance ; i++) {
-		ar_distanceArcs[i][i] = 0 ; 
+	for (int i=0 ; i < num_nodes ; i++) {
+		this->cost_mat[i][i] = 0 ; 
   }
 
   // TODO: this comment was in the original code. Is there something that assumes this elsewhere?
 	// distance of any connected pair of edges with a connected at the depot location should have a turn penalty of 0
 
-	for (int i=0 ; i < ar_nbArcsDistance ; i++)
+	for (int i=0 ; i < num_nodes ; i++)
 	{
-		for (int j=0 ; j < ar_nbArcsDistance ; j++)
+		for (int j=0 ; j < num_nodes ; j++)
 		{
-      ar_distanceArcs[i][j] = cost_mat(i, j);
+      this->cost_mat[i][j] = cost_mat(i, j);
 		}
 	}
 
-	/* SPECIFYING THE MODES FOR THE NODE DELIVERIES */
+	/* SPECIFYING THE NODES FOR THE CLIENT DELIVERIES */
 	for (int i=1 ; i <= num_clusters ; i++)
 	{
     auto ptr = cluster_to_node_ptr[i].unchecked();
-		cli[i].ar_nbModes = cluster_to_node_ptr[i].shape(0) ;
+		cli[i].ar_nbNodes = cluster_to_node_ptr[i].shape(0) ;
     for (int local_node_idx = 0; local_node_idx < ptr.shape(0); ++local_node_idx) {
-      cli[i].ar_Modes.push_back(&ar_Arcs[ptr(local_node_idx)]);
+      cli[i].ar_Nodes.push_back(ptr(local_node_idx));
     }
 	}
 
-	/* IDENTIFYING THE MAXIMUM NUMBER OF MODES FOR A DELIVERY */
-	ar_maxNbModes = 0 ;
+	/* IDENTIFYING THE MAXIMUM NUMBER OF NODES FOR A DELIVERY */
+	ar_maxNbNodesPerClient = 0 ;
 	for (int i=0 ; i <= this->nbClients ; i++) {
-		if (cli[i].ar_nbModes > ar_maxNbModes) {
-			ar_maxNbModes = cli[i].ar_nbModes ;
+		if (cli[i].ar_nbNodes > ar_maxNbNodesPerClient) {
+			ar_maxNbNodesPerClient = cli[i].ar_nbNodes ;
     }
   }
 
-  ar_computeDistancesArcs();  // For the NEARP-TP, we rely on the distance between arcs (computed in the line graph)
+  ar_computeClientToClientDistances();
 
 	// Setting the method parameters
 	setMethodParams();
@@ -304,75 +286,8 @@ void Params::shuffleProches ()
 	}
 }
 
-void Params::ar_InitializeDistanceNodes()
+void Params::ar_computeClientToClientDistances()
 {
-	if (ar_NodesNonRequired+ar_NodesRequired  < 0 || ar_NodesNonRequired+ar_NodesRequired  > 1000000)
-		throw string("ERROR WHEN READING : Number of nodes has not been correctly read. A very likely cause is the use of the wrong problem type for a given problem instance");
-
-	// Build the ar_distanceNodes data structures
-	vector <double> myTemp = vector <double> (ar_NodesNonRequired+ar_NodesRequired+1) ; 
-	for (int i=0 ; i <= ar_NodesNonRequired+ar_NodesRequired ; i++)
-		myTemp[i] = 1.e20 ;
-
-	ar_distanceNodes.clear();
-	for (int i=0 ; i <= ar_NodesNonRequired+ar_NodesRequired ; i++)
-		ar_distanceNodes.push_back(myTemp);
-}
-
-void Params::ar_computeDistancesNodes()
-{
-	for (int ii = 1 ; ii <= ar_NodesNonRequired + ar_NodesRequired ; ii++)
-		ar_distanceNodes[ii][ii] = 0 ;
-
-	// simple application of the Floyd Warshall algorithm
-	for (int k=1 ; k <= ar_NodesNonRequired + ar_NodesRequired ; k++)
-	{
-		for (int i=1 ; i <= ar_NodesNonRequired + ar_NodesRequired ; i++)
-		{
-			for (int j=1 ; j <= ar_NodesNonRequired + ar_NodesRequired ; j++)
-			{
-				if (ar_distanceNodes[i][k] + ar_distanceNodes[k][j] < ar_distanceNodes[i][j])
-					ar_distanceNodes[i][j] = ar_distanceNodes[i][k] + ar_distanceNodes[k][j] ;
-			}
-		}
-	}
-
-	// Then, we would still like to include some distance information between services.
-	// The distance between two services is the minimum distance between the closest endpoints of the edge
-	// This is used by the granular search
-	double d ;
-	timeCost = new double * [nbClients + nbDepots+1];
-	for (int i=0 ; i < nbClients + nbDepots ; i++)
-	{
-		timeCost[i] = new double [nbClients + nbDepots+1];
-		for (int j=0 ; j < nbClients + nbDepots ; j++)
-		{
-			d = min(min(ar_distanceNodes[cli[i].ar_nodesExtr0][cli[j].ar_nodesExtr0],
-				ar_distanceNodes[cli[i].ar_nodesExtr0][cli[j].ar_nodesExtr1]),
-				min(ar_distanceNodes[cli[i].ar_nodesExtr1][cli[j].ar_nodesExtr0],
-				ar_distanceNodes[cli[i].ar_nodesExtr1][cli[j].ar_nodesExtr1]));
-
-			timeCost[i][j] = d ;
-		}
-	}
-}
-
-void Params::ar_computeDistancesArcs()
-{
-	// computes the distance in the line graph (for the turn penalties)
-	// simple application of the Floyd Warshall algorithm
-	for (int k=0 ; k < ar_nbArcsDistance ; k++)
-	{
-		for (int i=0 ; i < ar_nbArcsDistance ; i++)
-		{
-			for (int j=0 ; j < ar_nbArcsDistance  ; j++)
-			{
-				if (ar_distanceArcs[i][k] + ar_distanceArcs[k][j] < ar_distanceArcs[i][j])
-					ar_distanceArcs[i][j] = ar_distanceArcs[i][k] + ar_distanceArcs[k][j] ;
-			}
-		}
-	}
-
 	// Then, we would still like to include some distance information between services.
 	// The distance between two services is the minimum distance between one mode of each service
 	// This is used by the granular search
@@ -386,11 +301,11 @@ void Params::ar_computeDistancesArcs()
 		for (int j=0 ; j < nbClients + nbDepots ; j++)
 		{
 			myDistanceMin = 1.e20 ;
-			for (int ii=0 ; ii < (int)cli[i].ar_Modes.size() ; ii++)
+			for (int ii=0 ; ii < (int)cli[i].ar_Nodes.size() ; ii++)
 			{
-				for (int jj=0 ; jj < (int)cli[j].ar_Modes.size() ; jj++)
+				for (int jj=0 ; jj < (int)cli[j].ar_Nodes.size() ; jj++)
 				{
-					myTemp = ar_distanceArcs[cli[i].ar_Modes[ii]->indexArc][cli[j].ar_Modes[jj]->indexArc] ;
+					myTemp = cost_mat[cli[i].ar_Nodes[ii]][cli[j].ar_Nodes[jj]] ;
 					if (myTemp < myDistanceMin)
 						myDistanceMin = myTemp ;
 				}

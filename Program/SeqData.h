@@ -33,11 +33,8 @@ public:
 	double cost ; // total cost of the SeqData
 	double distance ; // total distance of the SeqData
 
-	// We use this data structure to be able to track the best combination of edge orientations
-	// To report the complete solution (with edge orientations) at the end of the algorithm
-	// Only used when printing the solution
-	// bestCostArcs[i] contains the complete solution (all the path of arcs) when starting with the depot 0 and finishing with mode i
-	vector < vector < vector < pair<int,int> > > > bestCostArcs ;
+	// bestCostNodes[i] contains the sequence of nodes when starting with the depot 0 and finishing with node i
+	vector < vector < vector <int> > > bestCostNodes ;
 
 	// More general version, which can deal with an unlimited number of service modes
 	// Used for problems with turn penalties

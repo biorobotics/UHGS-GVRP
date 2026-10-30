@@ -212,13 +212,6 @@ void Client::ajoute (int y, int z, int ancienNbDays)
 	}
 }
 
-Arc * Client::getArc (int i, int j)
-{
-	for (int k=0 ; k < ar_nbModes ; k++)
-		if (ar_Modes[k]->nodeBegin == i && ar_Modes[k]->nodeEnd == j) return ar_Modes[k] ;
-	return NULL ;
-}
-
 Client::Client()
 {
 }

@@ -412,9 +412,9 @@ void Population::ExportBest (string nomFichier)
 {
 	vector <int> rout ;
 	vector < vector < vector <int> > > allRoutes ; 
-	vector < vector < vector < pair <int,int> > > > allRoutesArcs ; 
+	vector < vector < vector < pair <int> > > > allRoutesNodes ; 
 	allRoutes.push_back(vector < vector <int> > ());
-	allRoutesArcs.push_back(vector < vector <pair<int,int> > > ()) ;
+	allRoutesNodes.push_back(vector < vector <int> > ()) ;
 	int compteur ;
 	Noeud * noeudActuel ;
 	LocalSearch * loc ;
@@ -484,14 +484,14 @@ void Population::ExportBest (string nomFichier)
 		{
 			compteur = 1 ;
 			allRoutes.push_back(vector < vector <int> > ());
-			allRoutesArcs.push_back(vector < vector <pair<int,int> > > ()) ;
+			allRoutesNodes.push_back(vector < vector <int> > ()) ;
 			for (int i=0 ; i < params->nombreVehicules[k] ; i++)
 			{	
 				// Test if the route is empty
 				if (!loc->routes[k][i].depot->suiv->estUnDepot)
 				{
 					// The route is not empty
-					// First, we pre-process again the data structures on the route with the flag "true", which allow to track back the orientation of the visits
+					// First, we pre-process again the data structures on the route with the flag "true", which allow to track back the visits
 					loc->routes[k][i].updateRouteData(true); 
 					noeudActuel = loc->routes[k][i].depot->suiv ;
 					rout.clear();
@@ -505,9 +505,9 @@ void Population::ExportBest (string nomFichier)
 					}
 
 					allRoutes[k].push_back(rout);
-					allRoutesArcs[k].push_back(loc->routes[k][i].depot->pred->seq0_i->bestCostArcs[0][0]) ;
+					allRoutesNodes[k].push_back(loc->routes[k][i].depot->pred->seq0_i->bestCostNodes[0][0]) ;
 
-					if( loc->routes[k][i].depot->pred->seq0_i->bestCostArcs[0][0].size() != rout.size())
+					if( loc->routes[k][i].depot->pred->seq0_i->bestCostNodes[0][0].size() != rout.size())
 						throw string ("Issue : mismatch between the route size and the number of arcs reported by the SeqData");
 
 					myfile << " " << loc->routes[k][i].depot->cour ; // Printing the depot
@@ -517,15 +517,14 @@ void Population::ExportBest (string nomFichier)
 					myfile << " " << loc->routes[k][i].depot->pred->seq0_i->evaluation(loc->routes[k][i].depot->pred->seq0_i,loc->routes[k][i].vehicle) << " " ; // Printing the total cost of this route
 					
 					myfile << " " << (int)rout.size() ; // Printing the number of customers in the route
-					for (int j=0 ; j < (int)rout.size() ; j++ ) // Printing the visits and their orientation
+					for (int j=0 ; j < (int)rout.size() ; j++ ) // Printing the visits 
 					{
 						if (rout[j] < params->nbDepots)
 							myfile << " (D " ;
 						else
 							myfile << " (S " ;
 						myfile << rout[j] << "," ;
-						myfile << loc->routes[k][i].depot->pred->seq0_i->bestCostArcs[0][0][j].first << "," ;
-						myfile << loc->routes[k][i].depot->pred->seq0_i->bestCostArcs[0][0][j].second << ")" ;
+						myfile << loc->routes[k][i].depot->pred->seq0_i->bestCostNodes[0][0][j] << ")" ;
 					}
 					myfile << endl ;
 					compteur ++ ;
@@ -536,7 +535,7 @@ void Population::ExportBest (string nomFichier)
 		myfile.close();
 
 		// Check the solution
-		if (!solutionChecker(allRoutes,allRoutesArcs,trainer->coutSol.distance,bestValide->maxRoute))
+		if (!solutionChecker(allRoutes,allRoutesNodes,trainer->coutSol.distance,bestValide->maxRoute))
 		{
 			// If the solution does not pass the checker, then we erase the file (we will detect when running the script that some results are missing)
 			for (int i=0 ; i < 10 ; i++)
@@ -553,7 +552,7 @@ void Population::ExportBest (string nomFichier)
 	}
 }
 
-bool Population::solutionChecker(vector < vector < vector < int > > > & allRoutes, vector < vector < vector < pair <int,int > > > > & allRoutesArcs, double expectedCost, double expectedMaxRoute)
+bool Population::solutionChecker(vector < vector < vector < int > > > & allRoutes, vector < vector < vector <int> > > & allRoutesNodes, double expectedCost, double expectedMaxRoute)
 {
 	double totalCost = 0 ;
 	double routeCost ;
@@ -635,27 +634,19 @@ bool Population::solutionChecker(vector < vector < vector < int > > > & allRoute
 	}
 
 	// Verification of the solution cost
-	// If its the MM-kWRPP, we verify the cost of the longest route
 	for (int d=1 ; d <= params->nbDays ; d++)
 	{
 		for (int r=0 ; r < (int)allRoutes[d].size() ; r++)
 		{
-			// For each route, sum the distances (case of the CARP)
+			// For each route, sum the distances
 			routeCost = 0 ;
 			
-      for (int i=0 ; i < (int)allRoutesArcs[d][r].size()-1; i++ )
+      for (int i=0 ; i < (int)allRoutesNodes[d][r].size()-1; i++ )
       {
-        Arc * arc1 = params->cli[allRoutes[d][r][i]].getArc(allRoutesArcs[d][r][i].first,allRoutesArcs[d][r][i].second);
-        Arc * arc2 = params->cli[allRoutes[d][r][i+1]].getArc(allRoutesArcs[d][r][i+1].first,allRoutesArcs[d][r][i+1].second);
-        routeCost += params->ar_distanceArcs[arc1->indexArc][arc2->indexArc] ;
+        int node_idx1 = allRoutesNodes[d][r][i];
+        int node_idx2 = allRoutesNodes[d][r][i + 1];
+        routeCost += params->cost_mat[node_idx1][node_idx1] ;
       }
-			for (int i=0 ; i < (int)allRoutesArcs[d][r].size(); i++ )
-			{
-				if (allRoutesArcs[d][r][i].first == params->cli[allRoutes[d][r][i]].ar_nodesExtr0)
-					routeCost += params->cli[allRoutes[d][r][i]].ar_serviceCost01 ;
-				else
-					routeCost += params->cli[allRoutes[d][r][i]].ar_serviceCost10 ;
-			}
 			if (routeCost > maxRouteLength) // Updating the maximum route cost
 				maxRouteLength = routeCost ;
 			totalCost += routeCost ; // Summing the costs
