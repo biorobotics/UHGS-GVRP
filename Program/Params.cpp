@@ -210,11 +210,6 @@ Params::Params(unsigned int seedRNG, int nbVeh, double vc, const Ref<const Vecto
 		this->cost_mat[i][i] = 0 ; 
   }
 
-  // TODO: this comment was in the original code. Is there something that assumes this elsewhere? Yes, because if I take out the i != j condition below,
-  // we get the message "Increasing the capacity violation limit in Split." Why are we ever using cost_mat[i][i] for any i?
-
-	// distance of any connected pair of edges with a connected at the depot location should have a turn penalty of 0
-
 	for (int i=0 ; i < num_nodes ; i++)
 	{
 		for (int j=0 ; j < num_nodes ; j++)
