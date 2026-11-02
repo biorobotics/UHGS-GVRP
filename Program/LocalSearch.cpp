@@ -1211,10 +1211,10 @@ void LocalSearch::updateMoves ()
   {
     client = ordreParcours[i] ;
     clients[client].moves.clear();
-    size = (int)params->cli[client].sommetsVoisinsAvant.size();
+    size = (int)params->cli[client].inverseCloseCustomers.size();
     for (int a1 = 0 ; a1 < size ; a1++ )
     {
-      client2 = params->cli[client].sommetsVoisinsAvant[a1] ;
+      client2 = params->cli[client].inverseCloseCustomers[a1] ;
       if (client2 >= params->nbDepots && clients[client2].estPresent) clients[client].moves.push_back(client2);
     }
   }

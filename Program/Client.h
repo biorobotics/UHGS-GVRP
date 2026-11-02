@@ -55,10 +55,10 @@ class Client
 	vector <int> ordreProximiteDepots ;
 
 	// For a customer i, list of close customers j by proximity
-	vector <int> sommetsVoisins ;
+	vector <int> closeCustomers ;
 
 	// For a customer j, list of customers i to which j is considered as "close"
-	vector <int> sommetsVoisinsAvant ;
+	vector <int> inverseCloseCustomers ;
 
 	Client();
 

@@ -57,8 +57,8 @@ void Params::calculeStructures ()
 
 	for (int i=0 ; i < nbClients + nbDepots ; i++)
 	{
-		cli[i].sommetsVoisins.clear();
-		cli[i].sommetsVoisinsAvant.clear();
+		cli[i].closeCustomers.clear();
+		cli[i].inverseCloseCustomers.clear();
 	}
 
 	for (int i=0 ; i < nbClients + nbDepots ; i++)
@@ -77,8 +77,8 @@ void Params::calculeStructures ()
 		// And keeping only the closest ones
 		for (int j=0 ; j < min(nbClients,granularity) ; j++)
 		{
-			cli[i].sommetsVoisinsAvant.push_back(myVector[j].myInt);
-			cli[myVector[j].myInt].sommetsVoisins.push_back(i);
+			cli[i].inverseCloseCustomers.push_back(myVector[j].myInt);
+			cli[myVector[j].myInt].closeCustomers.push_back(i);
 			isCorrelated[myVector[j].myInt][i] = true ;
 		}
 	}
@@ -215,23 +215,23 @@ void Params::shuffleProches ()
 	// Shuffling the list of close customers for each customer
 	for (int i=nbDepots ; i < nbClients + nbDepots ; i++)
 	{
-		for (int a1 = 0 ; a1 < (int)cli[i].sommetsVoisins.size()-1 ; a1++ )
+		for (int a1 = 0 ; a1 < (int)cli[i].closeCustomers.size()-1 ; a1++ )
 		{
-			temp2 = a1 + rand() % ((int)cli[i].sommetsVoisins.size() - a1) ;
-			temp =  cli[i].sommetsVoisins[a1] ;
-			cli[i].sommetsVoisins[a1] = cli[i].sommetsVoisins[temp2];
-			cli[i].sommetsVoisins[temp2] = temp ;
+			temp2 = a1 + rand() % ((int)cli[i].closeCustomers.size() - a1) ;
+			temp =  cli[i].closeCustomers[a1] ;
+			cli[i].closeCustomers[a1] = cli[i].closeCustomers[temp2];
+			cli[i].closeCustomers[temp2] = temp ;
 		}
 	}
 
 	for (int i=nbDepots ; i < nbClients + nbDepots ; i++)
 	{
-		for (int a1 = 0 ; a1 < (int)cli[i].sommetsVoisinsAvant.size()-1 ; a1++ )
+		for (int a1 = 0 ; a1 < (int)cli[i].inverseCloseCustomers.size()-1 ; a1++ )
 		{
-			temp2 = a1 + rand() % ((int)cli[i].sommetsVoisinsAvant.size() - a1) ;
-			temp =  cli[i].sommetsVoisinsAvant[a1] ;
-			cli[i].sommetsVoisinsAvant[a1] = cli[i].sommetsVoisinsAvant[temp2];
-			cli[i].sommetsVoisinsAvant[temp2] = temp ;
+			temp2 = a1 + rand() % ((int)cli[i].inverseCloseCustomers.size() - a1) ;
+			temp =  cli[i].inverseCloseCustomers[a1] ;
+			cli[i].inverseCloseCustomers[a1] = cli[i].inverseCloseCustomers[temp2];
+			cli[i].inverseCloseCustomers[temp2] = temp ;
 		}
 	}
 }
