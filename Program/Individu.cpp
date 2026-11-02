@@ -33,6 +33,8 @@ Individu::Individu(Params * params, bool createAllStructures) : params(params)
   for (int j = 0 ; j < params->nombreVehicules ; j++ )
     chromR.push_back(-1);
 
+  suivants.resize(params->nbDepots + params->nbClients );
+  precedents.resize(params->nbDepots + params->nbClients );
 	for (int i=0 ; i< params->nbDepots + params->nbClients ; i++)
 	{
     suivants[i] = -1;
