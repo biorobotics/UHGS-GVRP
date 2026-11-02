@@ -27,7 +27,7 @@
 using namespace std ;
 
 // different client types
-enum ClientType {AR_DEPOT, AR_CLIENT_NODE, AR_CLIENT_EDGE, AR_CLIENT_ARC};
+enum ClientType {AR_DEPOT, AR_CLIENT_NODE};
 
 class Client
 {

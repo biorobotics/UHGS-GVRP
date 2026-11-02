@@ -158,15 +158,12 @@ Params::Params(unsigned int seedRNG, int nbVeh, double vc, const Ref<const Vecto
 	cli[0].ar_Nodes.push_back(0);
 	cli[0].ar_nbNodes = 1 ;
 
-	/* THEN READ THE CHARACTERISTICS OF THE NODE SERVICES */
 	for (int i=1 ; i <= num_clusters; i++)
 	{
     cli[i].ar_nodesExtr0 = i ;
     cli[i].demand = demand_per_cluster[i] ;
     totalDemand += cli[i].demand ;
 	}
-
-	/* BUILDING THE ARC DISTANCE STRUCTURES */
 
 	this->cost_mat.resize(num_nodes);
 	for (int i=0 ; i < num_nodes ; i++) {
