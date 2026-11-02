@@ -38,7 +38,7 @@ int LocalSearch::mutation ()
 {
 	// Local Search
 	// Based on the classic moves (Relocate, Swap, CROSS, 2-Opt and 2-Opt*)
-	rechercheTerminee = false ;
+	searchFinished = false ;
 	double costBeforeRemoval, costAfterRemoval;
 	bool gainWhenRemoving ;
 	int moveEffectue = 0;
@@ -48,9 +48,9 @@ int LocalSearch::mutation ()
 	int size2 ;
 
 	// We search and apply moves until a local minimum is attained
-	while (!rechercheTerminee)
+	while (!searchFinished)
 	{
-		rechercheTerminee = true ;
+		searchFinished = true ;
 		moveEffectue = 0 ;
 
 		// For every node U in random order
@@ -416,7 +416,7 @@ int LocalSearch::interRouteGeneralInsert()
 	placeV->route->updateRouteData(false);
 	setEmptyRoute(); // Keep a pointer on the first empty route
 
-	rechercheTerminee = false ; // Not finished the search
+	searchFinished = false ; // Not finished the search
 	nbInterSwap ++ ;
 	return 1 ; // Return Success
 }
@@ -497,7 +497,7 @@ int LocalSearch::interRoute2Opt ()
 	routeV->updateRouteData(false);
 	setEmptyRoute(); // Keep a pointer on the first empty route
 
-	rechercheTerminee = false ; // Not finished the search
+	searchFinished = false ; // Not finished the search
 	nbInter2Opt ++ ;
 	clusterU = tempU ;
 	x = clusterU->successor ;
@@ -617,7 +617,7 @@ int LocalSearch::interRoute2OptInv()
 	routeV->updateRouteData(false);
 	setEmptyRoute(); // Keep a pointer on the first empty route
 
-	rechercheTerminee = false ; // Not finished the search
+	searchFinished = false ; // Not finished the search
 	nbInter2Opt ++ ;
 	return 1 ; // Return Success
 }
@@ -1131,7 +1131,7 @@ int LocalSearch::intraRouteGeneralInsertDroite ()
 
 	routeU->updateRouteData(false); // Update the pre-processed data on the subsequences of the route
 	setEmptyRoute(); // Keep a pointer on the first empty route
-	rechercheTerminee = false ; // Not finished the search
+	searchFinished = false ; // Not finished the search
 	nbIntraSwap ++ ;
 	clusterU = tempU ;
 	clusterV = tempV ;
@@ -1186,7 +1186,7 @@ int LocalSearch::intraRoute2Opt ()
 	y->pred = clusterU ;
 	routeU->updateRouteData(false);  // Update the pre-processed data on the subsequences of the route
 	setEmptyRoute(); // Keep a pointer on the first empty route
-	rechercheTerminee = false ; // Not finished the search
+	searchFinished = false ; // Not finished the search
 	nbIntra2Opt ++ ;
 	return 1 ; // Return Success
 }
