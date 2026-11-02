@@ -29,7 +29,7 @@ using namespace std ;
 class LocalSearch ;
 
 // Structure used to keep the cost of a solution
-struct CoutSol {
+struct CostSol {
 
 	// value of the fitness, including the penalties for possible violations of the constraints
 	double evaluation ;
@@ -48,7 +48,7 @@ struct CoutSol {
 
 
 	// Constructor
-	CoutSol(){
+	CostSol(){
 		evaluation = 0 ;
 		distance = 0 ;
 		capacityViol = 0 ;
@@ -57,7 +57,7 @@ struct CoutSol {
 	}
 
 	// says if "this" is better in terms of feasibility than "c2"
-	bool isBetterFeas(CoutSol c2){
+	bool isBetterFeas(CostSol c2){
 		bool isBetter = false ;
 		bool isDominated = false ;
 		if (capacityViol > c2.capacityViol + 0.0001) isDominated = true ;
@@ -98,7 +98,7 @@ public:
 	float fitRank ;
 
 	// evaluation of the solution
-	CoutSol coutSol ;
+	CostSol costSol ;
 
 	// number of routes (if computed)
 	int nbRoutes ;
@@ -128,19 +128,19 @@ public:
 	void computeSuivants();
 
 	// working table for split (dynamic programming for Split)
-	vector < vector < CoutSol >> potentiels ;
+	vector < vector < CostSol >> potentiels ;
 
 	// table of predecessors (dynamic programming for Split)
 	 vector < vector<int > > pred ;
 
 	// storing the cost of the evaluations of arcs (i,j) in the Split graph
-	vector < vector < CoutSol> > coutArcsSplit ;
+	vector < vector < CostSol> > costArcsSplit ;
 
 	// tells if the fitness has been computed
 	bool isFitnessComputed ;
 
 	// tells if the individual is feasible
-	bool estValide ;
+	bool isValid ;
 
 	// measure of distance from "this" to an individual indiv2
 	double distance(Individu * indiv2);
@@ -153,7 +153,7 @@ public:
 	void removeProche(Individu * indiv) ;
 
 	// average distance with the n closest individuals
-	double distPlusProche(int n) ;
+	double avDistanceToClosest(int n) ;
 
 	// Data structure to perform a LocalSearch. 
 	// Only some complete individuals, "rejeton" for example in Generic.h
@@ -192,7 +192,7 @@ public:
 
 	// copy of an individual in the other
 	// Warning, only copies the chromosomes for storage, not all other structures (potentials and LS)
-	void recopieIndividu (Individu * destination , Individu * source);
+	void copyIndividual (Individu * destination , Individu * source);
 
 	// constructor of a random individual
 	// if the flag "createAllStructures" is set to true, all search structures, including the LS are also initialized

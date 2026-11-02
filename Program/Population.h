@@ -29,7 +29,7 @@
 using namespace std ;
 
 // Structure to manage a sub-population (feasible or infeasible solutions)
-struct SousPop
+struct SubPop
 {
 	// Individuals
 	vector <Individu *> individus ;
@@ -43,15 +43,15 @@ class Population
    private:
 
    // List to remember which of the 50 previous individuals were feasible in terms of load capacity
-   list <bool> listeValiditeCharge ;
+   list <bool> listCapacityFeasible ;
 
    // List to remember which of the 50 previous individuals were feasible in terms of max travel time
-   list <bool> listeValiditeTemps ;
+   list <bool> listTimeFeasible ;
 
    // Place an individual in the population, such that the population
-   // remains sorted by penalized cost (i.e. the coutSol.evaluation value)
+   // remains approximately sorted from smallest to largest penalized cost (i.e. the costSol.evaluation value)
    // Returns its position
-   int placeIndividu (SousPop * pop, Individu * indiv);
+   int placeIndividu (SubPop * pop, Individu * indiv);
 
    public:
 
@@ -69,32 +69,33 @@ class Population
    Individu * trainer;
 	   
    // check if there is already a solution with the same fitness in the population
-   bool fitExist ( SousPop * pop, Individu * indiv ) ;
+   bool fitExist ( SubPop * pop, Individu * indiv ) ;
 
    // compute the biased fitness of the individuals in the population
-   void evalExtFit(SousPop * pop);
+   void evalExtFit(SubPop * pop);
 
-   // add an individual in the population
+   // add an individual in the population. If population becomes too large,
+   // remove member
    int addIndividu (Individu * indiv);
 
    // add all individuals from another population
    int addAllIndividus (Population * pop);
 
    // remove an individual in the population (chosen accoding to the biased fitness)
-   void removeIndividu(SousPop * pop, int p);
+   void removeIndividu(SubPop * pop, int p);
    
    // subprocedure that chooses an individual to be removed
-   int selectCompromis (SousPop * souspop) ; 
+   int selectCompromis (SubPop * subpop) ; 
 
    // update the table of distance (Hamming distance) between individuals to know their proximity
-   void updateProximity (SousPop * pop, Individu * indiv);
+   void updateProximity (SubPop * pop, Individu * indiv);
 
    // Diversification procedure (replace a large part of the population by new random solutions)
    void diversify ();
 
    // Feasible and Infeasible subpopulations
-   SousPop * valides;
-   SousPop * invalides;
+   SubPop * feas_subpop;
+   SubPop * infeas_subpop;
 
    // Get one individual per binary tournament
    Individu * getIndividuBinT ();
@@ -103,13 +104,13 @@ class Population
    Individu * getIndividuPourc (int pourcentage);
 
    // Get best feasible individual
-   Individu * getIndividuBestValide ();
+   Individu * getBestFeasibleIndividual ();
 
    // Get best infeasible individual
-   Individu * getIndividuBestInvalide ();
+   Individu * getBestInfeasibleIndividual ();
 
    // when the penalty coefficient change, need to recompute properly the fitness of the individuals in the population
-   void validatePen (SousPop * souspop);
+   void validatePen (SubPop * subpop);
 
    //////////////////////////////////////////////////////////
 
@@ -121,25 +122,25 @@ class Population
    /* FUNCTIONS FOR REGULAR PRINTOUTS OF THE STATUS OF THE POPULATION */
 
    // get the fraction of valid individuals with respect to the load constraint
-   double fractionValidesCharge () ;
+   double fractionCapacityFeasible () ;
 
    // get the fraction of valid individuals with respect to the time constraint
-   double fractionValidesTemps () ;
+   double fractionTimeFeasible () ;
 
    // get the diversity of the population
-   double getDiversity(SousPop * pop);
+   double getDiversity(SubPop * pop);
 
    // get the average cost of a feasible solution in the population
-   double getMoyenneValides ();
+   double getAverageFeasibleCost ();
 
    // get the average cost of an infeasible solution in the population
-   double getMoyenneInvalides ();
+   double getAverageInfeasibleCost ();
 
    // print a small report of the status of the population
    void afficheEtat(int NbIter);
 
    // update the count of valid individuals
-   void updateNbValides (Individu * indiv);
+   void updateNbFeas (Individu * indiv);
 
    // Constructor
    Population(Params * params);

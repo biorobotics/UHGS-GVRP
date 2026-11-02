@@ -28,8 +28,8 @@ void Params::setMethodParams()
 
 	nbCountDistMeasure = 3 ; // Number of close individuals considered in the distance measure (diversity management)
 	granularity = 40 ; // Restriction of the LS moves to 40 closest nodes
-	minValides = 0.15 ; // Target proportion of feasible solution
-	maxValides = 0.20 ; // Target proportion of feasible solution
+	minFeasibleFraction = 0.15 ; // Target proportion of feasible solution
+	maxFeasibleFraction = 0.20 ; // Target proportion of feasible solution
 	penalityCapa = 50 ; // Initial penalties (will evolve during the search)
 	penalityLength = 50; // Initial penalties (will evolve during the search)
 }

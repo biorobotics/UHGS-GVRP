@@ -21,10 +21,10 @@
 Population::Population(Params * params) : params(params)
 {
 	Individu * randomIndiv ;
-	valides = new SousPop();
-	invalides = new SousPop();
-	valides->nbIndiv = 0 ;
-	invalides->nbIndiv = 0 ;
+	feas_subpop = new SubPop();
+	infeas_subpop = new SubPop();
+	feas_subpop->nbIndiv = 0 ;
+	infeas_subpop->nbIndiv = 0 ;
 	double temp, temp2 ;
 	bool feasibleFound = false ;
 
@@ -39,15 +39,15 @@ Population::Population(Params * params) : params(params)
 		randomIndiv = new Individu (params,true);
 		education(randomIndiv);
 		addIndividu(randomIndiv) ;
-		updateNbValides(randomIndiv);
-		if (!randomIndiv->estValide)
+		updateNbFeas(randomIndiv);
+		if (!randomIndiv->isValid)
 		{
 			temp = params->penalityCapa ;
 			temp2 = params->penalityLength ;
 			params->penalityCapa *= 10 ;
 			params->penalityLength *= 10 ;
 
-			trainer->recopieIndividu(trainer,randomIndiv);
+			trainer->copyIndividual(trainer,randomIndiv);
 			trainer->generalSplit();
 			trainer->updateLS();
 			trainer->localSearch->runSearchTotal();
@@ -55,19 +55,19 @@ Population::Population(Params * params) : params(params)
 			params->penalityCapa = temp ;
 			params->penalityLength = temp2 ;
 			trainer->generalSplit();
-			trainer->recopieIndividu(randomIndiv,trainer);
+			trainer->copyIndividual(randomIndiv,trainer);
 			addIndividu(randomIndiv) ;
 		}
-		if (randomIndiv->estValide) feasibleFound = true ;
+		if (randomIndiv->isValid) feasibleFound = true ;
 		delete randomIndiv ;
 	}
 
 	for (int i=0 ; i < 50 ; i++ )
 	{
-		if (i%2 == 0) listeValiditeCharge.push_back(true);
-		else listeValiditeCharge.push_back(false);
-		if (i%2 == 0) listeValiditeTemps.push_back(true);
-		else listeValiditeTemps.push_back(false);
+		if (i%2 == 0) listCapacityFeasible.push_back(true);
+		else listCapacityFeasible.push_back(false);
+		if (i%2 == 0) listTimeFeasible.push_back(true);
+		else listTimeFeasible.push_back(false);
 	}
 
 	temp = params->penalityCapa ;
@@ -77,32 +77,32 @@ Population::Population(Params * params) : params(params)
 Population::~Population()
 {
 	int size ;
-	if (valides != NULL)  
+	if (feas_subpop != NULL)  
 	{
-		size = (int)valides->individus.size() ;
-		for (int i=0 ; i < size ; i++) delete valides->individus[i] ;
-		delete valides ;
+		size = (int)feas_subpop->individus.size() ;
+		for (int i=0 ; i < size ; i++) delete feas_subpop->individus[i] ;
+		delete feas_subpop ;
 	}
 
-	if (invalides != NULL)  
+	if (infeas_subpop != NULL)  
 	{
-		size = (int)invalides->individus.size() ;
-		for (int i=0 ; i < size ; i++) delete invalides->individus[i] ;
-		delete invalides ;
+		size = (int)infeas_subpop->individus.size() ;
+		for (int i=0 ; i < size ; i++) delete infeas_subpop->individus[i] ;
+		delete infeas_subpop ;
 	}
 	delete trainer ;
 }
 
-void Population::evalExtFit(SousPop * pop)
+void Population::evalExtFit(SubPop * pop)
 {
 	int temp ;
-	vector <int> classement ;
+	vector <int> sorted_indices ;
 	vector <double> distances ;
 
 	for (int i = 0 ; i < pop->nbIndiv ; i++ )
 	{
-		classement.push_back(i) ;
-		distances.push_back(pop->individus[i]->distPlusProche(params->nbCountDistMeasure)) ;
+		sorted_indices.push_back(i) ;
+		distances.push_back(pop->individus[i]->avDistanceToClosest(params->nbCountDistMeasure)) ;
 	}
 
 	// Ranking the individuals in terms of contribution to diversity
@@ -110,11 +110,11 @@ void Population::evalExtFit(SousPop * pop)
 	{
 		for (int i = 0 ; i < pop->nbIndiv - n - 1 ; i++ )
 		{
-			if ( distances[classement[i]] < distances[classement[i+1]] - 0.000001 )
+			if ( distances[sorted_indices[i]] < distances[sorted_indices[i+1]] - 0.000001 )
 			{
-				temp = classement[i+1] ;
-				classement[i+1] = classement[i] ;
-				classement[i] = temp ;
+				temp = sorted_indices[i+1] ;
+				sorted_indices[i+1] = sorted_indices[i] ;
+				sorted_indices[i] = temp ;
 			}
 		}
 	}
@@ -122,29 +122,29 @@ void Population::evalExtFit(SousPop * pop)
 	// Computing the biased fitness
 	for (int i = 0 ; i < pop->nbIndiv ; i++ )
 	{
-		pop->individus[classement[i]]->divRank = (float)i/(float)(pop->nbIndiv-1) ;
-		pop->individus[classement[i]]->fitRank = (float)classement[i]/(float)(pop->nbIndiv-1) ;
-		pop->individus[classement[i]]->fitnessEtendu = pop->individus[classement[i]]->fitRank + ((float)1.0-(float)params->el/(float)pop->nbIndiv) * pop->individus[classement[i]]->divRank ;
+		pop->individus[sorted_indices[i]]->divRank = (float)i/(float)(pop->nbIndiv-1) ;
+		pop->individus[sorted_indices[i]]->fitRank = (float)sorted_indices[i]/(float)(pop->nbIndiv-1) ;
+		pop->individus[sorted_indices[i]]->fitnessEtendu = pop->individus[sorted_indices[i]]->fitRank + ((float)1.0-(float)params->el/(float)pop->nbIndiv) * pop->individus[sorted_indices[i]]->divRank ;
 	}
 }
 
 int Population::addIndividu (Individu * indiv)
 {
-	SousPop * souspop ;
+	SubPop * subpop ;
 	int k, result ;
 
-	if ( indiv->estValide ) souspop = valides ;
-	else souspop = invalides ;
+	if ( indiv->isValid ) subpop = feas_subpop ;
+	else subpop = infeas_subpop ;
 
-	result = placeIndividu(souspop,indiv);
+	result = placeIndividu(subpop,indiv);
 
 	// Keeping only the survivors if the maximum size of the population has been reached
-	if (result != -1 && souspop->nbIndiv > params->mu + params->lambda )
+	if (result != -1 && subpop->nbIndiv > params->mu + params->lambda )
 	{
-		while ( souspop->nbIndiv > params->mu)
+		while ( subpop->nbIndiv > params->mu)
 		{
-			k = selectCompromis(souspop);
-			removeIndividu(souspop,k);
+			k = selectCompromis(subpop);
+			removeIndividu(subpop,k);
 		}
 	}
 	return result ;
@@ -155,16 +155,16 @@ int Population::addAllIndividus (Population * pop)
 	Individu * randomIndiv ;
 	randomIndiv = new Individu (params,1.0);
 
-	for (int i=0 ; i<pop->valides->nbIndiv ; i++)
+	for (int i=0 ; i<pop->feas_subpop->nbIndiv ; i++)
 	{
-		randomIndiv->recopieIndividu(randomIndiv,pop->valides->individus[i]);
+		randomIndiv->copyIndividual(randomIndiv,pop->feas_subpop->individus[i]);
 		education(randomIndiv);
 		addIndividu(randomIndiv);
 	}
 
-	for (int i=0 ; i<pop->invalides->nbIndiv ; i++)
+	for (int i=0 ; i<pop->infeas_subpop->nbIndiv ; i++)
 	{
-		randomIndiv->recopieIndividu(randomIndiv,pop->invalides->individus[i]); 
+		randomIndiv->copyIndividual(randomIndiv,pop->infeas_subpop->individus[i]); 
 		education(randomIndiv);
 		addIndividu(randomIndiv);
 	}
@@ -173,7 +173,7 @@ int Population::addAllIndividus (Population * pop)
 	return 1 ;
 }
 
-void Population::updateProximity (SousPop * pop, Individu * indiv)
+void Population::updateProximity (SubPop * pop, Individu * indiv)
 {
 	for (int k=0 ; k < pop->nbIndiv ; k++)
 	{
@@ -185,13 +185,13 @@ void Population::updateProximity (SousPop * pop, Individu * indiv)
 	}
 }
 
-bool Population::fitExist ( SousPop * pop, Individu * indiv )
+bool Population::fitExist ( SubPop * pop, Individu * indiv )
 {
 	int count = 0 ;
-	double distance = indiv->coutSol.evaluation ;
+	double distance = indiv->costSol.evaluation ;
 	for (int i=0 ; i < (int)pop->nbIndiv ; i++ )
 	{
-		if (pop->individus[i]->coutSol.evaluation >= (distance - 0.01) && pop->individus[i]->coutSol.evaluation <= (distance + 0.01))
+		if (pop->individus[i]->costSol.evaluation >= (distance - 0.01) && pop->individus[i]->costSol.evaluation <= (distance + 0.01))
 			count ++ ;
 	}
 	if (count <= 1) return false ;
@@ -204,18 +204,18 @@ void Population::diversify ()
 	double temp = params->penalityCapa ;
 	double temp2 = params->penalityLength ;
 
-	while ( valides->nbIndiv > (int)(0.3*(double)params->mu))
+	while ( feas_subpop->nbIndiv > (int)(0.3*(double)params->mu))
 	{
-		delete valides->individus[valides->nbIndiv-1] ;
-		valides->individus.pop_back();
-		valides->nbIndiv -- ;
+		delete feas_subpop->individus[feas_subpop->nbIndiv-1] ;
+		feas_subpop->individus.pop_back();
+		feas_subpop->nbIndiv -- ;
 	}
 
-	while ( invalides->nbIndiv > (int)(0.3*(double)params->mu))
+	while ( infeas_subpop->nbIndiv > (int)(0.3*(double)params->mu))
 	{
-		delete invalides->individus[invalides->nbIndiv-1] ;
-		invalides->individus.pop_back();
-		invalides->nbIndiv -- ;
+		delete infeas_subpop->individus[infeas_subpop->nbIndiv-1] ;
+		infeas_subpop->individus.pop_back();
+		infeas_subpop->nbIndiv -- ;
 	}
 
 	for (int i=0 ; i < params->mu ; i++ )
@@ -223,8 +223,8 @@ void Population::diversify ()
 		randomIndiv = new Individu (params,true);
 		education(randomIndiv);
 		addIndividu(randomIndiv) ;
-		updateNbValides(randomIndiv);
-		if (!randomIndiv->estValide) 
+		updateNbFeas(randomIndiv);
+		if (!randomIndiv->isValid) 
 		{
 			temp = params->penalityCapa ;
 			temp2 = params->penalityLength ;
@@ -232,7 +232,7 @@ void Population::diversify ()
 			params->penalityCapa *= 50 ;
 			params->penalityLength *= 50 ;
 
-			trainer->recopieIndividu(trainer,randomIndiv);
+			trainer->copyIndividual(trainer,randomIndiv);
 			trainer->generalSplit();
 			trainer->updateLS();
 			trainer->localSearch->runSearchTotal();
@@ -240,24 +240,24 @@ void Population::diversify ()
 			params->penalityCapa = temp ;
 			params->penalityLength = temp2 ;
 			trainer->generalSplit();
-			trainer->recopieIndividu(randomIndiv,trainer);
+			trainer->copyIndividual(randomIndiv,trainer);
 			addIndividu(randomIndiv) ;
 		}
 		delete randomIndiv ;
 	}
 }
 
-int Population::placeIndividu(SousPop * pop, Individu * indiv)
+int Population::placeIndividu(SubPop * pop, Individu * indiv)
 {
 	Individu * monIndiv = new Individu (params,false) ;
-	monIndiv->recopieIndividu (monIndiv , indiv) ;
+	monIndiv->copyIndividual (monIndiv , indiv) ;
 
 	bool placed = false ;
 	int i = (int)pop->individus.size()-1 ;
 	pop->individus.push_back(monIndiv);
 	while ( i >= 0 && !placed )
 	{
-		if (pop->individus[i]->coutSol.evaluation >= indiv->coutSol.evaluation + 0.001 )
+		if (pop->individus[i]->costSol.evaluation >= indiv->costSol.evaluation + 0.001 )
 		{
 			pop->individus[i+1] = pop->individus[i] ;
 			i -- ;
@@ -277,14 +277,14 @@ int Population::placeIndividu(SousPop * pop, Individu * indiv)
 		placed = true ;
 		pop->nbIndiv ++ ;
 		updateProximity (pop, pop->individus[0]);
-		if (pop == valides) timeBest = clock();
+		if (pop == feas_subpop) timeBest = clock();
 		return 0 ; // success
 	}
 	throw string ("erreur placeIndividu") ;
 	return -3 ;
 }
 
-void Population::removeIndividu(SousPop * pop, int p)
+void Population::removeIndividu(SubPop * pop, int p)
 {
 	Individu * partant = pop->individus[p];
 
@@ -303,25 +303,25 @@ void Population::removeIndividu(SousPop * pop, int p)
 	delete partant ;
 }
 
-void Population::validatePen (SousPop * souspop)
+void Population::validatePen (SubPop * subpop)
 {
 	Individu * indiv ;
 
 	// Updating Individual Evaluations
-	for (int i = 0 ; i < souspop->nbIndiv ; i++)
-		souspop->individus[i]->coutSol.evaluation = souspop->individus[i]->coutSol.distance 
-		+ params->penalityCapa * souspop->individus[i]->coutSol.capacityViol
-		+ params->penalityLength * souspop->individus[i]->coutSol.lengthViol ;
+	for (int i = 0 ; i < subpop->nbIndiv ; i++)
+		subpop->individus[i]->costSol.evaluation = subpop->individus[i]->costSol.distance 
+		+ params->penalityCapa * subpop->individus[i]->costSol.capacityViol
+		+ params->penalityLength * subpop->individus[i]->costSol.lengthViol ;
 
-	for (int i = 0 ; i < souspop->nbIndiv ; i++)
+	for (int i = 0 ; i < subpop->nbIndiv ; i++)
 	{
-		for (int j = 0 ; j < souspop->nbIndiv - i - 1; j++)
+		for (int j = 0 ; j < subpop->nbIndiv - i - 1; j++)
 		{
-			if (souspop->individus[j]->coutSol.evaluation >= souspop->individus[j+1]->coutSol.evaluation + 0.01 )
+			if (subpop->individus[j]->costSol.evaluation >= subpop->individus[j+1]->costSol.evaluation + 0.01 )
 			{
-				indiv = souspop->individus[j] ;
-				souspop->individus[j] = souspop->individus[j+1] ;
-				souspop->individus[j+1] = indiv ;
+				indiv = subpop->individus[j] ;
+				subpop->individus[j] = subpop->individus[j+1] ;
+				subpop->individus[j+1] = indiv ;
 			}
 		}
 	}
@@ -334,21 +334,21 @@ Individu * Population::getIndividuBinT ()
 	int place1, place2 ;
 
 	// Picking the first individual in the merge of both subpopulations
-	place1 = rand() % (valides->nbIndiv + invalides->nbIndiv) ;
-	if ( place1 >= valides->nbIndiv ) 
-		individu1 = invalides->individus[place1 - valides->nbIndiv] ;
+	place1 = rand() % (feas_subpop->nbIndiv + infeas_subpop->nbIndiv) ;
+	if ( place1 >= feas_subpop->nbIndiv ) 
+		individu1 = infeas_subpop->individus[place1 - feas_subpop->nbIndiv] ;
 	else 
-		individu1 = valides->individus[place1] ;
+		individu1 = feas_subpop->individus[place1] ;
 
 	// Picking the second individual in the merge of both subpopulations
-	place2 = rand() % (valides->nbIndiv + invalides->nbIndiv) ;
-	if ( place2 >= valides->nbIndiv ) 
-		individu2 = invalides->individus[place2 - valides->nbIndiv] ;
+	place2 = rand() % (feas_subpop->nbIndiv + infeas_subpop->nbIndiv) ;
+	if ( place2 >= feas_subpop->nbIndiv ) 
+		individu2 = infeas_subpop->individus[place2 - feas_subpop->nbIndiv] ;
 	else 
-		individu2 = valides->individus[place2] ;
+		individu2 = feas_subpop->individus[place2] ;
 
-	evalExtFit(valides);
-	evalExtFit(invalides);
+	evalExtFit(feas_subpop);
+	evalExtFit(infeas_subpop);
 
 	// Keeping the best one
 	if (individu1->fitnessEtendu < individu2->fitnessEtendu)
@@ -361,16 +361,16 @@ Individu * Population::getIndividuPourc (int pourcentage)
 {
 	int place ;
 	// Picking the individual in the 25% best of the valide population, if there are individuals in this set
-	if ((valides->nbIndiv*pourcentage)/100 != 0)
+	if ((feas_subpop->nbIndiv*pourcentage)/100 != 0)
 	{
-		place = rand() % ((valides->nbIndiv*pourcentage)/100);
-		return valides->individus[place] ;
+		place = rand() % ((feas_subpop->nbIndiv*pourcentage)/100);
+		return feas_subpop->individus[place] ;
 	}
 	// Picking the individual in the 25% best of the invalide population, if there are individuals in this set
-	else if ((invalides->nbIndiv*pourcentage)/100 != 0)
+	else if ((infeas_subpop->nbIndiv*pourcentage)/100 != 0)
 	{
-		place = rand() % ((invalides->nbIndiv*pourcentage)/100);
-		return invalides->individus[place] ;
+		place = rand() % ((infeas_subpop->nbIndiv*pourcentage)/100);
+		return infeas_subpop->individus[place] ;
 	}
 	else // If everything fails
 	{
@@ -379,15 +379,15 @@ Individu * Population::getIndividuPourc (int pourcentage)
 	}
 }
 
-Individu * Population::getIndividuBestValide ()
+Individu * Population::getBestFeasibleIndividual ()
 {
-	if (valides->nbIndiv != 0) return valides->individus[0] ;
+	if (feas_subpop->nbIndiv != 0) return feas_subpop->individus[0] ;
 	else return NULL ;
 }
 
-Individu * Population::getIndividuBestInvalide ()
+Individu * Population::getBestInfeasibleIndividual ()
 {
-	if (invalides->nbIndiv != 0) return invalides->individus[0] ;
+	if (infeas_subpop->nbIndiv != 0) return infeas_subpop->individus[0] ;
 	else return NULL ;
 }
 
@@ -460,25 +460,25 @@ bool Population::solutionChecker( vector < vector < int  > > & allRoutes,  vecto
 	return true ; // Success
 }
 
-double Population::fractionValidesCharge ()
+double Population::fractionCapacityFeasible ()
 { 
 	int count = 0 ;
-	for ( list<bool>::iterator it = listeValiditeCharge.begin(); it != listeValiditeCharge.end(); ++it )
+	for ( list<bool>::iterator it = listCapacityFeasible.begin(); it != listCapacityFeasible.end(); ++it )
 		if (*it == true) count ++ ;
 
 	return double(count)/50. ;
 }
 
-double Population::fractionValidesTemps ()
+double Population::fractionTimeFeasible ()
 { 
 	int count = 0 ;
-	for ( list<bool>::iterator it = listeValiditeTemps.begin(); it != listeValiditeTemps.end(); ++it )
+	for ( list<bool>::iterator it = listTimeFeasible.begin(); it != listTimeFeasible.end(); ++it )
 		if (*it == true) count ++ ;
 
 	return double(count)/50. ;
 }
 
-double Population::getDiversity(SousPop * pop)
+double Population::getDiversity(SubPop * pop)
 {
 	double total = 0 ;
 	int count = 0 ;
@@ -493,76 +493,76 @@ double Population::getDiversity(SousPop * pop)
 	return total / (double)count ;
 } 
 
-double Population::getMoyenneValides ()
+double Population::getAverageFeasibleCost ()
 {
-	double moyenne = 0 ;
-	for (int i=0 ; i < min(valides->nbIndiv,params->mu) ; i ++)
-		moyenne += valides->individus[i]->coutSol.evaluation ;
-	return  moyenne / min(valides->nbIndiv,params->mu) ;
+	double sum_of_penalized_costs = 0 ;
+	for (int i=0 ; i < min(feas_subpop->nbIndiv,params->mu) ; i ++)
+		sum_of_penalized_costs += feas_subpop->individus[i]->costSol.evaluation ;
+	return  sum_of_penalized_costs / min(feas_subpop->nbIndiv,params->mu) ;
 }
 
-double Population::getMoyenneInvalides ()
+double Population::getAverageInfeasibleCost ()
 {
-	double moyenne = 0 ;
-	for (int i=0 ; i <  min(invalides->nbIndiv,params->mu); i ++)
-		moyenne += invalides->individus[i]->coutSol.evaluation ;
-	return  moyenne / min(invalides->nbIndiv,params->mu) ;
+	double sum_of_penalized_costs = 0 ;
+	for (int i=0 ; i <  min(infeas_subpop->nbIndiv,params->mu); i ++)
+		sum_of_penalized_costs += infeas_subpop->individus[i]->costSol.evaluation ;
+	return  sum_of_penalized_costs / min(infeas_subpop->nbIndiv,params->mu) ;
 }
 
-int Population::selectCompromis (SousPop * souspop)
+int Population::selectCompromis (SubPop * subpop)
 {
 	// Selects one individual to be eliminated from the population
-	vector <int> classement ;
+	vector <int> sorted_indices ;
 	int temp, sortant ;
 
-	evalExtFit(souspop);
+	evalExtFit(subpop);
 
-	for (int i=0 ; i < souspop->nbIndiv ; i++)
-		classement.push_back(i);
+	for (int i=0 ; i < subpop->nbIndiv ; i++)
+		sorted_indices.push_back(i);
 
 	// Adding a penalty in case of clone (in the objective space or solution space)
-	for (int i=1 ; i < souspop->nbIndiv ; i++)
+	for (int i=1 ; i < subpop->nbIndiv ; i++)
 	{
-		if (souspop->individus[i]->distPlusProche(1) <= 0.001 ) // in solution space
-			souspop->individus[i]->fitnessEtendu += 5 ;
-		if (fitExist(souspop,souspop->individus[i])) // in objective space
-			souspop->individus[i]->fitnessEtendu += 5 ;	
+		if (subpop->individus[i]->avDistanceToClosest(1) <= 0.001 ) // in solution space
+			subpop->individus[i]->fitnessEtendu += 5 ;
+		if (fitExist(subpop,subpop->individus[i])) // in objective space
+			subpop->individus[i]->fitnessEtendu += 5 ;	
 	}
 
 	// Ranking the elements per extended fitness and selecting out the worst
-	for (int n = 0 ; n < souspop->nbIndiv ; n++ )
+	for (int n = 0 ; n < subpop->nbIndiv ; n++ )
 	{
-		for (int i = 0 ; i < souspop->nbIndiv - n - 1 ; i++ )
+		for (int i = 0 ; i < subpop->nbIndiv - n - 1 ; i++ )
 		{
-			if ( souspop->individus[classement[i]]->fitnessEtendu > souspop->individus[classement[i+1]]->fitnessEtendu )
+			if ( subpop->individus[sorted_indices[i]]->fitnessEtendu > subpop->individus[sorted_indices[i+1]]->fitnessEtendu )
 			{
-				temp = classement[i+1] ;
-				classement[i+1] = classement[i] ;
-				classement[i] = temp ;
+				temp = sorted_indices[i+1] ;
+				sorted_indices[i+1] = sorted_indices[i] ;
+				sorted_indices[i] = temp ;
 			}
 		}
 	}
 
-	sortant = classement[souspop->nbIndiv-1] ;
+	sortant = sorted_indices[subpop->nbIndiv-1] ;
 	return sortant ;
 }
 
 void Population::education(Individu * indiv)
 {	
-	indiv->recopieIndividu(trainer,indiv);
+	indiv->copyIndividual(trainer,indiv);
 	trainer->generalSplit();
 	trainer->updateLS();
 	trainer->localSearch->runSearchTotal();
 	trainer->updateIndiv();
-	indiv->recopieIndividu(indiv,trainer);
+	indiv->copyIndividual(indiv,trainer);
 }
 
-void Population::updateNbValides (Individu * indiv)
+void Population::updateNbFeas (Individu * indiv)
 {		
-	listeValiditeCharge.push_back(indiv->coutSol.capacityViol < 0.001);
-	listeValiditeCharge.pop_front();
-	listeValiditeTemps.push_back(indiv->coutSol.lengthViol < 0.001);
-	listeValiditeTemps.pop_front();
+	listCapacityFeasible.push_back(indiv->costSol.capacityViol < 0.001);
+	listCapacityFeasible.pop_front();
+	listTimeFeasible.push_back(indiv->costSol.lengthViol < 0.001);
+	listTimeFeasible.pop_front();
 }
 
 void Population::afficheEtat(int nbIter)
@@ -572,24 +572,24 @@ void Population::afficheEtat(int nbIter)
 
 	cout << "It " << nbIter << " | Sol " ;
 
-	if (getIndividuBestValide () != NULL)
-		cout << getIndividuBestValide()->coutSol.distance << " " << getIndividuBestValide()->coutSol.routes << " "  ;
+	if (getBestFeasibleIndividual () != NULL)
+		cout << getBestFeasibleIndividual()->costSol.distance << " " << getBestFeasibleIndividual()->costSol.routes << " "  ;
 	else
 		cout << "NO-VALID " ;
 
-	if (getIndividuBestInvalide () != NULL)
-		cout << getIndividuBestInvalide()->coutSol.evaluation ;
+	if (getBestInfeasibleIndividual () != NULL)
+		cout << getBestInfeasibleIndividual()->costSol.evaluation ;
 	else
 		cout << "NO-INVALID" ;
 
-	cout << " | Moy " << getMoyenneValides() << " " << getMoyenneInvalides()
-		<< " | Div " << getDiversity(valides) << " " << getDiversity(invalides) << endl
-		<< " | Val " << fractionValidesCharge() << " " << fractionValidesTemps()
+	cout << " | Avg " << getAverageFeasibleCost() << " " << getAverageInfeasibleCost()
+		<< " | Div " << getDiversity(feas_subpop) << " " << getDiversity(infeas_subpop) << endl
+		<< " | Val " << fractionCapacityFeasible() << " " << fractionTimeFeasible()
 		<< " | Pen " << params->penalityCapa << " " << params->penalityLength
-		<< " | Pop " << valides->nbIndiv << " " << invalides->nbIndiv ;
-	if (getIndividuBestInvalide() != NULL && getIndividuBestValide() == NULL)
-		cout << " | Feas : distance " << getIndividuBestInvalide()->coutSol.distance
-		<< " duration " << getIndividuBestInvalide()->coutSol.lengthViol 
-		<< " load " << getIndividuBestInvalide()->coutSol.capacityViol ;
+		<< " | Pop " << feas_subpop->nbIndiv << " " << infeas_subpop->nbIndiv ;
+	if (getBestInfeasibleIndividual() != NULL && getBestFeasibleIndividual() == NULL)
+		cout << " | Feas : distance " << getBestInfeasibleIndividual()->costSol.distance
+		<< " duration " << getBestInfeasibleIndividual()->costSol.lengthViol 
+		<< " load " << getBestInfeasibleIndividual()->costSol.capacityViol ;
 	cout << endl ;
 }

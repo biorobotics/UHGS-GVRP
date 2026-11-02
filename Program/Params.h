@@ -110,9 +110,9 @@ public:
 	bool isSearchingFeasible ;
 
 	// population size parameters
-	int mu ; // Default 25
-	int lambda ; // Default 40
-	int el ; // Default 8
+	int mu ; // Min population size. Default 25
+	int lambda ; // Number of allowed population members beyond minimum. Default 40
+	int el ; // Number of elites. Default 12
 
 	// number of close individuals, taken into account in the distance measure (diversity management)
 	int nbCountDistMeasure ; // Default 3
@@ -122,8 +122,8 @@ public:
 	double penalityLength ;
 
 	// target of feasible individuals following LS
-	double minValides ; // Default 0.25
-	double maxValides ; // Default 0.35
+	double minFeasibleFraction ; // Default 0.25
+	double maxFeasibleFraction ; // Default 0.35
 
 	// number of close customers considered in RI (granular search)
 	int granularity ; // Default 40

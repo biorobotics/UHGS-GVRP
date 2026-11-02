@@ -34,30 +34,30 @@ void Genetic::evolveHGA (int maxIterNonProd, int nbRec)
 	nbIter = 0 ;
 	string temp ;
 	double fitBeforeRepair ;
-	CoutSol bestSolFeasibility ;
+	CostSol bestSolFeasibility ;
 	clock_t debut = clock() ; 
 
-	if (population->getIndividuBestValide() != NULL) bestSolFeasibility = population->getIndividuBestValide()->coutSol ;
-	else bestSolFeasibility = population->getIndividuBestInvalide()->coutSol ;
-	for (int i=0 ; i<population->invalides->nbIndiv ; i++)
-		if (population->invalides->individus[i]->coutSol.isBetterFeas(bestSolFeasibility)) bestSolFeasibility = population->invalides->individus[i]->coutSol ;
+	if (population->getBestFeasibleIndividual() != NULL) bestSolFeasibility = population->getBestFeasibleIndividual()->costSol ;
+	else bestSolFeasibility = population->getBestInfeasibleIndividual()->costSol ;
+	for (int i=0 ; i<population->infeas_subpop->nbIndiv ; i++)
+		if (population->infeas_subpop->individus[i]->costSol.isBetterFeas(bestSolFeasibility)) bestSolFeasibility = population->infeas_subpop->individus[i]->costSol ;
 
 	rejeton->localSearch->nbTotalRISinceBeginning = 0 ;
 
 	cout << "| Start of GA | NbNodes : " << params->nbClients << " | NbVehicles : " << params->nbVehiculesPerDep << " | " << endl ;
 
-	while (nbIterNonProd < maxIterNonProd && (clock() - debut <= ticks) && (!params->isSearchingFeasible || population->getIndividuBestValide() == NULL))
+	while (nbIterNonProd < maxIterNonProd && (clock() - debut <= ticks) && (!params->isSearchingFeasible || population->getBestFeasibleIndividual() == NULL))
 	{
-    if (population->getIndividuBestValide() != NULL && population->getIndividuBestValide()->coutSol.distance < params->cost_thresh) {
+    if (population->getBestFeasibleIndividual() != NULL && population->getBestFeasibleIndividual()->costSol.distance < params->cost_thresh) {
       std::cout << "Returning because we found a solution with cost lower than the provided threshold" << std::endl;
-      std::cout << "Cost is " << population->getIndividuBestValide()->coutSol.distance << std::endl;
+      std::cout << "Cost is " << population->getBestFeasibleIndividual()->costSol.distance << std::endl;
       break;
     }
 		// CROSSOVER
 		parent1 = population->getIndividuBinT(); // Pick two individuals per binary tournament
 		parent2 = population->getIndividuBinT(); // Pick two individuals per binary tournament
-		rejeton->recopieIndividu(rejeton,parent1); // Put them in adequate data structures
-		rejeton2->recopieIndividu(rejeton2,parent2); // Put them in adequate data structures
+		rejeton->copyIndividual(rejeton,parent1); // Put them in adequate data structures
+		rejeton2->copyIndividual(rejeton2,parent2); // Put them in adequate data structures
 
     crossOX(); // OX crossover
 
@@ -68,19 +68,19 @@ void Genetic::evolveHGA (int maxIterNonProd, int nbRec)
 		rejeton->updateLS();
 		rejeton->localSearch->runSearchTotal();
 		rejeton->updateIndiv();
-		population->updateNbValides(rejeton);
+		population->updateNbFeas(rejeton);
 		place = population->addIndividu(rejeton) ;
 
 		// POSSIBLE REPAIR
-		if (!rejeton->estValide) 
+		if (!rejeton->isValid) 
 		{
-			fitBeforeRepair = rejeton->coutSol.evaluation ;
+			fitBeforeRepair = rejeton->costSol.evaluation ;
 			if (rand() % 2 == 0) // 50% chance to do repair on an infeasible individual
 			{
 				reparer();
-				if (rejeton->coutSol.evaluation < fitBeforeRepair - 0.01 || rejeton->coutSol.evaluation > fitBeforeRepair + 0.01 || rejeton->estValide) 
+				if (rejeton->costSol.evaluation < fitBeforeRepair - 0.01 || rejeton->costSol.evaluation > fitBeforeRepair + 0.01 || rejeton->isValid) 
 					place2 = population->addIndividu(rejeton) ;
-				if (rejeton->estValide)
+				if (rejeton->isValid)
 					place = place2 ;
 				else 
 					place = min(place,place2);
@@ -88,14 +88,14 @@ void Genetic::evolveHGA (int maxIterNonProd, int nbRec)
 		}
 
 		// SOME TRACES
-		if ( (rejeton->estValide && place == 0) || (rejeton->coutSol.isBetterFeas(bestSolFeasibility) && population->valides->nbIndiv == 0))
+		if ( (rejeton->isValid && place == 0) || (rejeton->costSol.isBetterFeas(bestSolFeasibility) && population->feas_subpop->nbIndiv == 0))
 		{	
-			if (traces && population->valides->nbIndiv > 0) 
-				cout << "NEW BEST FEASIBLE " << place << " " << population->getIndividuBestValide()->coutSol.evaluation << " distance : " << rejeton->coutSol.distance << " nbRoutes : " << rejeton->coutSol.routes << " capaViol : " << rejeton->coutSol.capacityViol << " lengthViol : " << rejeton->coutSol.lengthViol << endl << endl ;
-			if (traces && population->valides->nbIndiv == 0 ) 
-				cout << "NEW BEST INFEASIBLE "<< place << " " << rejeton->coutSol.evaluation                            << " distance : " << rejeton->coutSol.distance << " nbRoutes : " << rejeton->coutSol.routes << " capaViol : " << rejeton->coutSol.capacityViol << " lengthViol : " << rejeton->coutSol.lengthViol << endl << endl ;
-			if (rejeton->coutSol.isBetterFeas(bestSolFeasibility)) 
-				bestSolFeasibility = rejeton->coutSol ;
+			if (traces && population->feas_subpop->nbIndiv > 0) 
+				cout << "NEW BEST FEASIBLE " << place << " " << population->getBestFeasibleIndividual()->costSol.evaluation << " distance : " << rejeton->costSol.distance << " nbRoutes : " << rejeton->costSol.routes << " capaViol : " << rejeton->costSol.capacityViol << " lengthViol : " << rejeton->costSol.lengthViol << endl << endl ;
+			if (traces && population->feas_subpop->nbIndiv == 0 ) 
+				cout << "NEW BEST INFEASIBLE "<< place << " " << rejeton->costSol.evaluation                            << " distance : " << rejeton->costSol.distance << " nbRoutes : " << rejeton->costSol.routes << " capaViol : " << rejeton->costSol.capacityViol << " lengthViol : " << rejeton->costSol.lengthViol << endl << endl ;
+			if (rejeton->costSol.isBetterFeas(bestSolFeasibility)) 
+				bestSolFeasibility = rejeton->costSol ;
 			nbIterNonProd = 1 ; 
 		}
 		else nbIterNonProd ++ ;
@@ -151,7 +151,7 @@ void Genetic::reparer ()
 	rejeton->updateIndiv();
 
 	// If the first tentative failed, second tentative with higher penalty
-	if (!rejeton->estValide) 
+	if (!rejeton->isValid) 
 	{
 		params->penalityCapa *= 10 ;
 		params->penalityLength *= 10 ;
@@ -169,35 +169,35 @@ void Genetic::reparer ()
 void Genetic::gererPenalites ()
 {
 	bool changeDone = false ;
-	double fractionCharge = population->fractionValidesCharge() ;
-	double fractionTemps = population->fractionValidesTemps() ;
+	double fractionCapacityFeasible = population->fractionCapacityFeasible() ;
+	double fractionTimeFeasible = population->fractionTimeFeasible() ;
 
 	// if there are not enough feasible solutions
-	if ( fractionCharge < params->minValides && params->penalityCapa < 5000)
+	if ( fractionCapacityFeasible < params->minFeasibleFraction && params->penalityCapa < 5000)
 	{
 		params->penalityCapa = (double)((float)params->penalityCapa * 1.2) ;
 		changeDone = true ;
 	}
-	else if ( fractionCharge > params->maxValides && params->penalityCapa > 0.01)
+	else if ( fractionCapacityFeasible > params->maxFeasibleFraction && params->penalityCapa > 0.01)
 	{
 		params->penalityCapa =  (double)((float)params->penalityCapa * 0.85) ;
 		changeDone = true ;
 	}
 
 	// if there are too many feasible solutions
-	if ( fractionTemps < params->minValides && params->penalityLength < 5000)
+	if ( fractionTimeFeasible < params->minFeasibleFraction && params->penalityLength < 5000)
 	{
 		params->penalityLength =  (double)((float)params->penalityLength * 1.2) ;
 		changeDone = true ;
 	}
-	else if ( fractionTemps > params->maxValides && params->penalityLength > 0.01)
+	else if ( fractionTimeFeasible > params->maxFeasibleFraction && params->penalityLength > 0.01)
 	{
 		params->penalityLength =  (double)((float)params->penalityLength * 0.85) ;
 		changeDone = true ;
 	}
 
 	if (changeDone) 
-		population->validatePen(population->invalides);
+		population->validatePen(population->infeas_subpop);
 }
 
 void Genetic::crossOX ()
