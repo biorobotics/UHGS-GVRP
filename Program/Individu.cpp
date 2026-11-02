@@ -363,8 +363,8 @@ void Individu::updateLS()
 	Noeud * myClient ;
 	Route * myRoute ;
 
-	// we reinitialize the "ordreParcours" vector
-	localSearch->ordreParcours.clear() ; 
+	// we reinitialize the "shuffledDepotAndCustomerIndices" vector
+	localSearch->shuffledDepotAndCustomerIndices.clear() ; 
 
 	// we reset the "isPresent" values to false
 	for (i=params->nbDepots ; i < params->nbClients + params->nbDepots ; i++)
@@ -397,7 +397,7 @@ void Individu::updateLS()
 			localSearch->nodeTestedForEachRoute(myClient->customer_or_depot_idx);
 			myDepot->successor = myClient ;
 			myDepotFin->pred = myClient ;
-			localSearch->ordreParcours.push_back(myClient->customer_or_depot_idx);
+			localSearch->shuffledDepotAndCustomerIndices.push_back(myClient->customer_or_depot_idx);
 		}
 		else if (j > i+1)
 		{
@@ -409,7 +409,7 @@ void Individu::updateLS()
 			myClient->isPresent = true ;
 			localSearch->nodeTestedForEachRoute(myClient->customer_or_depot_idx);
 			myDepot->successor = myClient ;
-			localSearch->ordreParcours.push_back(myClient->customer_or_depot_idx);
+			localSearch->shuffledDepotAndCustomerIndices.push_back(myClient->customer_or_depot_idx);
 
 			// information for the end of the route
 			myClient = &localSearch->clients[chromT[j-1]] ;
@@ -419,7 +419,7 @@ void Individu::updateLS()
 			myClient->isPresent = true ;
 			localSearch->nodeTestedForEachRoute(myClient->customer_or_depot_idx);
 			myDepotFin->pred = myClient ;
-			localSearch->ordreParcours.push_back(myClient->customer_or_depot_idx);
+			localSearch->shuffledDepotAndCustomerIndices.push_back(myClient->customer_or_depot_idx);
 
 			// and the middle
 			for ( int k = (int)i+1 ; k <= j-2 ; k++ )
@@ -430,7 +430,7 @@ void Individu::updateLS()
 				myClient->route =  myRoute ;
 				myClient->isPresent = true ;
 				localSearch->nodeTestedForEachRoute(myClient->customer_or_depot_idx);
-				localSearch->ordreParcours.push_back(myClient->customer_or_depot_idx);
+				localSearch->shuffledDepotAndCustomerIndices.push_back(myClient->customer_or_depot_idx);
 			}
 		}
 		j = i ;

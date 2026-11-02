@@ -64,7 +64,7 @@ private:
 	vector <SeqData *> myseqs ; // temporary vector to keep some pointers towards preprocessed data
 
 	// shuffling procedure (for RI)
-	void melangeParcours () ;
+	void shuffleDepotAndCustomerIndices () ;
 
 	// updating the list of moves (for RI)
 	void updateMoves ();
@@ -93,10 +93,7 @@ public:
 
 	// little data structure to choose the order of the exploration of the moves.
 	// Regularly shuffled
-	vector < int > ordreParcours ;
-	void addOP ( int client) ; // functions for updating the ordreParcours data structure
-	void removeOP ( int client) ; // functions for updating the ordreParcours data structure
-
+	vector < int > shuffledDepotAndCustomerIndices ;
 	// counters on the moves (for printing)
 	int nbInterSwap ;
 	int nbIntraSwap ;

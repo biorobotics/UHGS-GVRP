@@ -23,7 +23,7 @@ void LocalSearch::runSearchTotal ()
 {
 	// Shuffling the order of move evaluations
 	params->shuffleCloseCustomerLists();
-	melangeParcours();
+	shuffleDepotAndCustomerIndices();
 	int nbMoves = 0 ;
 
 	/* RUNNING THE LS */
@@ -54,14 +54,14 @@ int LocalSearch::mutation ()
 		moveEffectue = 0 ;
 
 		// For every node U in random order
-		for ( int posU = 0 ; posU < (int)ordreParcours.size() ; posU ++ )
+		for ( int posU = 0 ; posU < (int)shuffledDepotAndCustomerIndices.size() ; posU ++ )
 		{
 			posU -= moveEffectue ; // We return on the last node if there has been a move
 			nbMoves += moveEffectue ;
 			moveEffectue = 0 ;
 			routeVideTestee = false ;
 
-			noeudU = &clients[ordreParcours[posU]];
+			noeudU = &clients[shuffledDepotAndCustomerIndices[posU]];
 			routeU = noeudU->route ;
 			vehicleU = routeU->vehicle ;
 			x = noeudU->successor ;
@@ -1191,25 +1191,25 @@ int LocalSearch::intraRoute2Opt ()
 	return 1 ; // Return Success
 }
 
-void LocalSearch::melangeParcours ()
+void LocalSearch::shuffleDepotAndCustomerIndices ()
 {
-	// Shuffling the ordreParcours vector
+	// Shuffling the shuffledDepotAndCustomerIndices vector
 	int j,temp ;
-  for (int i = 0 ; i < (int)ordreParcours.size() - 1 ; i++)
+  for (int i = 0 ; i < (int)shuffledDepotAndCustomerIndices.size() - 1 ; i++)
   {
-    j = i + rand() % ((int)ordreParcours.size() - i) ;
-    temp = ordreParcours[i] ;
-    ordreParcours[i] = ordreParcours[j] ;
-    ordreParcours[j] = temp ;
+    j = i + rand() % ((int)shuffledDepotAndCustomerIndices.size() - i) ;
+    temp = shuffledDepotAndCustomerIndices[i] ;
+    shuffledDepotAndCustomerIndices[i] = shuffledDepotAndCustomerIndices[j] ;
+    shuffledDepotAndCustomerIndices[j] = temp ;
   }
 }
 
 void LocalSearch::updateMoves ()
 {
 	int client, client2, size ;
-  for (int i=0 ; i<( int)ordreParcours.size() ; i++)
+  for (int i=0 ; i<( int)shuffledDepotAndCustomerIndices.size() ; i++)
   {
-    client = ordreParcours[i] ;
+    client = shuffledDepotAndCustomerIndices[i] ;
     clients[client].moves.clear();
     size = (int)params->cli[client].inverseCloseCustomers.size();
     for (int a1 = 0 ; a1 < size ; a1++ )
@@ -1249,67 +1249,6 @@ void LocalSearch::insertNoeud(Noeud * U, Noeud * V)
 		V->successor = U ;
 		U->route = V->route ;
 	}
-}
-
-void LocalSearch::removeNoeud(Noeud * U)
-{
-	Noeud * temp =  U->successor ;
-	reinitMoves(U->route);
-	U->pred->successor = U->successor ;
-	U->successor->pred = U->pred ;
-	U->route = NULL ;
-	U->pred = NULL ;
-	U->successor = NULL ;
-	temp->route->updateRouteData(false);
-	setRouteVide();
-
-	// Managing the other data structures
-	individu->chromT.pop_back();
-	removeOP(U->customer_or_depot_idx);
-	U->isPresent = false ;
-}
-
-void LocalSearch::addNoeud(Noeud * U, Noeud * V)
-{
-	reinitMoves(V->route);
-	V->successor->pred = U ;
-	U->pred = V;
-	U->successor = V->successor ;
-	V->successor = U ;
-
-	// Update the routes
-	U->isPresent = true ;
-	U->route = V->route ;
-	U->route->updateRouteData(false);
-	setRouteVide();
-
-	// Manage the other data structures
-	individu->chromT.push_back(0);
-	addOP(U->customer_or_depot_idx);
-}
-
-void LocalSearch::removeOP (int client) 
-{
-	// Remove one occurence in the ordreParcours structure
-	int it = 0  ;
-	while (ordreParcours[it] != client) { it ++ ; }
-	ordreParcours[it] = ordreParcours[(int)ordreParcours.size() - 1];
-	ordreParcours.pop_back();
-}
-
-void LocalSearch::addOP (int client) 
-{
-	// Add one element in the ordreParcours structure
-	int it, temp2 ;
-	if (ordreParcours.size() != 0)
-	{
-		it = (int)rand() % ordreParcours.size() ;
-		temp2 = ordreParcours[it] ;
-		ordreParcours[it] = client ;
-		ordreParcours.push_back(temp2);
-	}
-	else
-		ordreParcours.push_back(client);
 }
 
 void LocalSearch::reinitMoves(Route * r)
@@ -1413,7 +1352,7 @@ LocalSearch::LocalSearch(Params * params,Individu * individu) : params (params),
   routeVide = NULL;
 
 	for (int i=params->nbDepots ; i < params->nbDepots + params->nbClients ; i++)
-		ordreParcours.push_back(i);
+		shuffledDepotAndCustomerIndices.push_back(i);
 
 	// Initialization of the SeqData structures, for all nodes
 	// These structures were designed to stay contiguous in memory (however it had only a negligible impact on performance)
