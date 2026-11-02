@@ -42,7 +42,7 @@ void Genetic::evolveHGA (int maxIterNonProd, int nbRec)
 	for (int i=0 ; i<population->infeas_subpop->nbIndiv ; i++)
 		if (population->infeas_subpop->individus[i]->costSol.isBetterFeas(bestSolFeasibility)) bestSolFeasibility = population->infeas_subpop->individus[i]->costSol ;
 
-	rejeton->localSearch->nbTotalRISinceBeginning = 0 ;
+	offspring->localSearch->nbTotalRISinceBeginning = 0 ;
 
 	cout << "| Start of GA | NbNodes : " << params->nbClients << " | NbVehicles : " << params->nbVehiculesPerDep << " | " << endl ;
 
@@ -56,31 +56,31 @@ void Genetic::evolveHGA (int maxIterNonProd, int nbRec)
 		// CROSSOVER
 		parent1 = population->getIndividuBinT(); // Pick two individuals per binary tournament
 		parent2 = population->getIndividuBinT(); // Pick two individuals per binary tournament
-		rejeton->copyIndividual(rejeton,parent1); // Put them in adequate data structures
-		rejeton2->copyIndividual(rejeton2,parent2); // Put them in adequate data structures
+		offspring->copyIndividual(offspring,parent1); // Put them in adequate data structures
+		parent2_copy->copyIndividual(parent2_copy,parent2); // Put them in adequate data structures
 
     crossOX(); // OX crossover
 
 		// SPLIT
-		rejeton->generalSplit();
+		offspring->generalSplit();
 
 		// LOCAL SEARCH
-		rejeton->updateLS();
-		rejeton->localSearch->runSearchTotal();
-		rejeton->updateIndiv();
-		population->updateNbFeas(rejeton);
-		place = population->addIndividu(rejeton) ;
+		offspring->updateLS();
+		offspring->localSearch->runSearchTotal();
+		offspring->updateIndiv();
+		population->updateNbFeas(offspring);
+		place = population->addIndividu(offspring) ;
 
 		// POSSIBLE REPAIR
-		if (!rejeton->isValid) 
+		if (!offspring->isValid) 
 		{
-			fitBeforeRepair = rejeton->costSol.evaluation ;
+			fitBeforeRepair = offspring->costSol.evaluation ;
 			if (rand() % 2 == 0) // 50% chance to do repair on an infeasible individual
 			{
 				reparer();
-				if (rejeton->costSol.evaluation < fitBeforeRepair - 0.01 || rejeton->costSol.evaluation > fitBeforeRepair + 0.01 || rejeton->isValid) 
-					place2 = population->addIndividu(rejeton) ;
-				if (rejeton->isValid)
+				if (offspring->costSol.evaluation < fitBeforeRepair - 0.01 || offspring->costSol.evaluation > fitBeforeRepair + 0.01 || offspring->isValid) 
+					place2 = population->addIndividu(offspring) ;
+				if (offspring->isValid)
 					place = place2 ;
 				else 
 					place = min(place,place2);
@@ -88,14 +88,14 @@ void Genetic::evolveHGA (int maxIterNonProd, int nbRec)
 		}
 
 		// SOME TRACES
-		if ( (rejeton->isValid && place == 0) || (rejeton->costSol.isBetterFeas(bestSolFeasibility) && population->feas_subpop->nbIndiv == 0))
+		if ( (offspring->isValid && place == 0) || (offspring->costSol.isBetterFeas(bestSolFeasibility) && population->feas_subpop->nbIndiv == 0))
 		{	
 			if (traces && population->feas_subpop->nbIndiv > 0) 
-				cout << "NEW BEST FEASIBLE " << place << " " << population->getBestFeasibleIndividual()->costSol.evaluation << " distance : " << rejeton->costSol.distance << " nbRoutes : " << rejeton->costSol.routes << " capaViol : " << rejeton->costSol.capacityViol << " lengthViol : " << rejeton->costSol.lengthViol << endl << endl ;
+				cout << "NEW BEST FEASIBLE " << place << " " << population->getBestFeasibleIndividual()->costSol.evaluation << " distance : " << offspring->costSol.distance << " nbRoutes : " << offspring->costSol.routes << " capaViol : " << offspring->costSol.capacityViol << " lengthViol : " << offspring->costSol.lengthViol << endl << endl ;
 			if (traces && population->feas_subpop->nbIndiv == 0 ) 
-				cout << "NEW BEST INFEASIBLE "<< place << " " << rejeton->costSol.evaluation                            << " distance : " << rejeton->costSol.distance << " nbRoutes : " << rejeton->costSol.routes << " capaViol : " << rejeton->costSol.capacityViol << " lengthViol : " << rejeton->costSol.lengthViol << endl << endl ;
-			if (rejeton->costSol.isBetterFeas(bestSolFeasibility)) 
-				bestSolFeasibility = rejeton->costSol ;
+				cout << "NEW BEST INFEASIBLE "<< place << " " << offspring->costSol.evaluation                            << " distance : " << offspring->costSol.distance << " nbRoutes : " << offspring->costSol.routes << " capaViol : " << offspring->costSol.capacityViol << " lengthViol : " << offspring->costSol.lengthViol << endl << endl ;
+			if (offspring->costSol.isBetterFeas(bestSolFeasibility)) 
+				bestSolFeasibility = offspring->costSol ;
 			nbIterNonProd = 1 ; 
 		}
 		else nbIterNonProd ++ ;
@@ -116,11 +116,11 @@ void Genetic::evolveHGA (int maxIterNonProd, int nbRec)
 		if (traces && nbIter % 500 == 0)
 		{
 			population->afficheEtat(nbIter);
-			cout << " | NbTotalMovesLS : " << rejeton->localSearch->nbTotalRISinceBeginning << endl ;
-			cout << " | interSwap " << rejeton->localSearch->nbInterSwap ;
-			cout << " | intraSwap " << rejeton->localSearch->nbIntraSwap ;
-			cout << " | inter2opt " << rejeton->localSearch->nbInter2Opt ;
-			cout << " | intra2opt " << rejeton->localSearch->nbIntra2Opt ;
+			cout << " | NbTotalMovesLS : " << offspring->localSearch->nbTotalRISinceBeginning << endl ;
+			cout << " | interSwap " << offspring->localSearch->nbInterSwap ;
+			cout << " | intraSwap " << offspring->localSearch->nbIntraSwap ;
+			cout << " | inter2opt " << offspring->localSearch->nbInter2Opt ;
+			cout << " | intra2opt " << offspring->localSearch->nbIntra2Opt ;
 			cout << " | " << endl ;
 			cout << " | CPU Time : " <<  (double)clock()/(double)CLOCKS_PER_SEC << " seconds " << endl ;
 			cout << endl ;
@@ -146,24 +146,24 @@ void Genetic::reparer ()
 	// First Tentative of Repair
 	params->penalityCapa *= 10 ;
 	params->penalityLength *= 10 ;
-	rejeton->updateLS();
-	rejeton->localSearch->runSearchTotal();
-	rejeton->updateIndiv();
+	offspring->updateLS();
+	offspring->localSearch->runSearchTotal();
+	offspring->updateIndiv();
 
 	// If the first tentative failed, second tentative with higher penalty
-	if (!rejeton->isValid) 
+	if (!offspring->isValid) 
 	{
 		params->penalityCapa *= 10 ;
 		params->penalityLength *= 10 ;
-		rejeton->generalSplit();
-		rejeton->updateLS();
-		rejeton->localSearch->runSearchTotal();
-		rejeton->updateIndiv();
+		offspring->generalSplit();
+		offspring->updateLS();
+		offspring->localSearch->runSearchTotal();
+		offspring->updateIndiv();
 	}
 
 	params->penalityCapa = temp ;
 	params->penalityLength = temp2 ;
-	rejeton->measureSol();
+	offspring->measureSol();
 }
 
 void Genetic::gererPenalites ()
@@ -218,17 +218,17 @@ void Genetic::crossOX ()
 	// we keep the elements from "debut" to "end"
 	while ((j % params->nbClients) != ((fin + 1) % params->nbClients))
 	{ 
-		freqClient[rejeton->chromT[j % params->nbClients]] = 0 ;
+		freqClient[offspring->chromT[j % params->nbClients]] = 0 ;
 		j ++ ;
 	}
 
 	// We fill the rest of the elements in the order of the second parent
 	for (int i=1 ; i <= params->nbClients ; i++)
 	{
-		temp = rejeton2->chromT[(fin + i) % params->nbClients] ;
+		temp = parent2_copy->chromT[(fin + i) % params->nbClients] ;
 		if (freqClient[temp] == 1)
 		{
-			rejeton->chromT[j % params->nbClients] = temp ;
+			offspring->chromT[j % params->nbClients] = temp ;
 			j ++ ;
 		}
 	}
@@ -241,14 +241,14 @@ ticks(ticks), traces(traces), population(population), params(params)
 		freqClient.push_back(params->cli[i].freq);
 
 	// Creating the Individuals that serve to perform the Local Search and other operations
-	rejeton = new Individu (params, true) ; 
-	rejeton2 = new Individu(params, true) ; 
-	rejeton->localSearch = new LocalSearch(params,rejeton) ;
+	offspring = new Individu (params, true) ; 
+	parent2_copy = new Individu(params, true) ; 
+	offspring->localSearch = new LocalSearch(params,offspring) ;
 } 
 
 Genetic::~Genetic(void)
 { 
-	delete rejeton ;
-	delete rejeton2 ;
+	delete offspring ;
+	delete parent2_copy ;
 }
 

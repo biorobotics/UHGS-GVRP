@@ -156,7 +156,7 @@ public:
 	double avDistanceToClosest(int n) ;
 
 	// Data structure to perform a LocalSearch. 
-	// Only some complete individuals, "rejeton" for example in Generic.h
+	// Only some complete individuals, "offspring" for example in Generic.h
 	// possess this structure. The others in Population.h are mainly used as containers
 	LocalSearch * localSearch ;
 

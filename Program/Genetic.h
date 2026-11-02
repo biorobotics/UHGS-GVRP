@@ -55,8 +55,8 @@ public:
 	// working individuals (for the local search and crossover)
 	// to work on some solutions we first create a copy in this kind of individuals
 	// because the individual used for storage in the population do not contain all search data structures
-	Individu * rejeton ; 
-	Individu * rejeton2 ;
+	Individu * offspringj ; 
+	Individu * parent2_copy ;
 
 	// Pointer towards the parameters of the problem
 	Params * params ;
