@@ -414,7 +414,7 @@ int LocalSearch::interRouteGeneralInsert()
 	// Update the pre-processed data on the subsequences of the route
 	placeU->route->updateRouteData(false);
 	placeV->route->updateRouteData(false);
-	setRouteVide(); // Keep a pointer on the first empty route
+	setEmptyRoute(); // Keep a pointer on the first empty route
 
 	rechercheTerminee = false ; // Not finished the search
 	nbInterSwap ++ ;
@@ -495,7 +495,7 @@ int LocalSearch::interRoute2Opt ()
 	// Update the pre-processed data on the subsequences of the route
 	routeU->updateRouteData(false);
 	routeV->updateRouteData(false);
-	setRouteVide(); // Keep a pointer on the first empty route
+	setEmptyRoute(); // Keep a pointer on the first empty route
 
 	rechercheTerminee = false ; // Not finished the search
 	nbInter2Opt ++ ;
@@ -615,7 +615,7 @@ int LocalSearch::interRoute2OptInv()
 	// Update the pre-processed data on the subsequences of the route
 	routeU->updateRouteData(false);
 	routeV->updateRouteData(false);
-	setRouteVide(); // Keep a pointer on the first empty route
+	setEmptyRoute(); // Keep a pointer on the first empty route
 
 	rechercheTerminee = false ; // Not finished the search
 	nbInter2Opt ++ ;
@@ -1130,7 +1130,7 @@ int LocalSearch::intraRouteGeneralInsertDroite ()
 	} 
 
 	routeU->updateRouteData(false); // Update the pre-processed data on the subsequences of the route
-	setRouteVide(); // Keep a pointer on the first empty route
+	setEmptyRoute(); // Keep a pointer on the first empty route
 	rechercheTerminee = false ; // Not finished the search
 	nbIntraSwap ++ ;
 	clusterU = tempU ;
@@ -1185,7 +1185,7 @@ int LocalSearch::intraRoute2Opt ()
 	nodeUpred->successor = clusterV ;
 	y->pred = clusterU ;
 	routeU->updateRouteData(false);  // Update the pre-processed data on the subsequences of the route
-	setRouteVide(); // Keep a pointer on the first empty route
+	setEmptyRoute(); // Keep a pointer on the first empty route
 	rechercheTerminee = false ; // Not finished the search
 	nbIntra2Opt ++ ;
 	return 1 ; // Return Success
@@ -1220,7 +1220,7 @@ void LocalSearch::updateMoves ()
   }
 }
 
-void LocalSearch::setRouteVide()
+void LocalSearch::setEmptyRoute()
 {
 	emptyRoute = NULL ;
 	int route = 0 ;

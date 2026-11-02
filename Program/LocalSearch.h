@@ -100,9 +100,9 @@ public:
 	int nbInter2Opt ;
 	int nbIntra2Opt ;
 
-	// keeping a pointer routeVide on the first empty route (to avoid iterating many identical empty routes) 
+	// keeping a pointer emptyRoute on the first empty route (to avoid iterating many identical empty routes) 
 	// initially set to NULL
-	Route * routeVide ;
+	Route * emptyRoute ;
 	// setting the pointer
 	void setEmptyRoute();
 
