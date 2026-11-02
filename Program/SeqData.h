@@ -51,10 +51,10 @@ public:
 	bool isInitialized ;
 
 	// Construction operators for data pre-processing
-	void initialisation(int U_customer_or_depot_idx, Params * mesParams, Individu * myIndiv, bool isForPathTracking);
-	void concatOneAfter(SeqData * seq,int V_customer_or_depot_idx, Individu * myIndiv);
-	void concatOneAfterWithPathTracking(SeqData * seq,int V_customer_or_depot_idx, Individu * myIndiv); // used to track the path when printing the final solution
-	void concatOneBefore(SeqData * seq,int V_customer_or_depot_idx, Individu * myIndiv);
+	void initialisation(int U_cluster_idx, Params * mesParams, Individu * myIndiv, bool isForPathTracking);
+	void concatOneAfter(SeqData * seq,int V_cluster_idx, Individu * myIndiv);
+	void concatOneAfterWithPathTracking(SeqData * seq,int V_cluster_idx, Individu * myIndiv); // used to track the path when printing the final solution
+	void concatOneBefore(SeqData * seq,int V_cluster_idx, Individu * myIndiv);
 	
 	// Route evaluation evaluators
 	double evaluation(SeqData * seq1, Vehicle * vehicle);

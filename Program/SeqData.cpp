@@ -53,10 +53,10 @@ SeqData::SeqData()
 SeqData::~SeqData()
 {}
 
-void SeqData::initialisation(int U_customer_or_depot_idx, Params * mesParams, Individu * myIndiv, bool isForPathTracking)
+void SeqData::initialisation(int U_cluster_idx, Params * mesParams, Individu * myIndiv, bool isForPathTracking)
 {
 	params = mesParams ;
-	load = params->cli[U_customer_or_depot_idx].demand;
+	load = params->cli[U_cluster_idx].demand;
 
 	if (!isInitialized)
 	{
@@ -71,9 +71,9 @@ void SeqData::initialisation(int U_customer_or_depot_idx, Params * mesParams, In
 		isInitialized = true ;
 	}
 
-	for (int i=0 ; i < params->cli[U_customer_or_depot_idx].ar_nbNodes ; i++)
+	for (int i=0 ; i < params->cli[U_cluster_idx].ar_nbNodes ; i++)
 	{
-		for (int j=0 ; j < params->cli[U_customer_or_depot_idx].ar_nbNodes ; j ++)
+		for (int j=0 ; j < params->cli[U_cluster_idx].ar_nbNodes ; j ++)
 		{
 			if (i == j) 
 				bestCost[i][j] = 0.0 ;
@@ -84,28 +84,28 @@ void SeqData::initialisation(int U_customer_or_depot_idx, Params * mesParams, In
 
 	if (isForPathTracking)
 	{
-		for (int i=0 ; i < params->cli[U_customer_or_depot_idx].ar_nbNodes ; i++)
+		for (int i=0 ; i < params->cli[U_cluster_idx].ar_nbNodes ; i++)
 		{
-			for (int j=0 ; j < params->cli[U_customer_or_depot_idx].ar_nbNodes ; j ++)
+			for (int j=0 ; j < params->cli[U_cluster_idx].ar_nbNodes ; j ++)
 			{
 				bestCostNodes[i][j].clear();
 				if (i == j) 
-					bestCostNodes[i][j].push_back(params->cli[U_customer_or_depot_idx].ar_Nodes[i]);
+					bestCostNodes[i][j].push_back(params->cli[U_cluster_idx].ar_Nodes[i]);
 			}
 		}
 	}
 
 	distance = 0 ;
-	firstNode = U_customer_or_depot_idx ;
-	lastNode = U_customer_or_depot_idx ;
+	firstNode = U_cluster_idx ;
+	lastNode = U_cluster_idx ;
 }
 
-void SeqData::concatOneAfter(SeqData * seq, int V_customer_or_depot_idx, Individu * myIndiv)
+void SeqData::concatOneAfter(SeqData * seq, int V_cluster_idx, Individu * myIndiv)
 {
 	double tempc ;
 	Client * firstCli = &params->cli[seq->firstNode] ;
 	Client * lastCli  = &params->cli[seq->lastNode] ;
-	Client * VCli = &params->cli[V_customer_or_depot_idx] ;
+	Client * VCli = &params->cli[V_cluster_idx] ;
 	distance = 1.e20 ;
 
 	for (int i=0 ; i < firstCli->ar_nbNodes ; i++)
@@ -122,17 +122,17 @@ void SeqData::concatOneAfter(SeqData * seq, int V_customer_or_depot_idx, Individ
 		}
 	}
 
-	load = seq->load + params->cli[V_customer_or_depot_idx].demand;
+	load = seq->load + params->cli[V_cluster_idx].demand;
 	firstNode = seq->firstNode ;
-	lastNode = V_customer_or_depot_idx ;
+	lastNode = V_cluster_idx ;
 }
 
-void SeqData::concatOneAfterWithPathTracking(SeqData * seq, int V_customer_or_depot_idx, Individu * myIndiv)
+void SeqData::concatOneAfterWithPathTracking(SeqData * seq, int V_cluster_idx, Individu * myIndiv)
 {
 	double tempc ;
 	Client * firstCli = &params->cli[seq->firstNode] ;
 	Client * lastCli  = &params->cli[seq->lastNode] ;
-	Client * VCli = &params->cli[V_customer_or_depot_idx] ;
+	Client * VCli = &params->cli[V_cluster_idx] ;
 	distance = 1.e20 ;
 
 	for (int i=0 ; i < firstCli->ar_nbNodes ; i++)
@@ -159,22 +159,22 @@ void SeqData::concatOneAfterWithPathTracking(SeqData * seq, int V_customer_or_de
 			}
 			bestCostNodes[i][j].clear();
 			bestCostNodes[i][j] = seq->bestCostNodes[i][myK] ;
-			bestCostNodes[i][j].push_back(params->cli[V_customer_or_depot_idx].ar_Nodes[j]);
+			bestCostNodes[i][j].push_back(params->cli[V_cluster_idx].ar_Nodes[j]);
 		}
 	}
 
-	load = seq->load + params->cli[V_customer_or_depot_idx].demand;
+	load = seq->load + params->cli[V_cluster_idx].demand;
 	firstNode = seq->firstNode ;
-	lastNode = V_customer_or_depot_idx ;
+	lastNode = V_cluster_idx ;
 }
 
 
-void SeqData::concatOneBefore(SeqData * seq,int V_customer_or_depot_idx, Individu * myIndiv)
+void SeqData::concatOneBefore(SeqData * seq,int V_cluster_idx, Individu * myIndiv)
 { 
 	double tempc ;
 	Client * firstCli = &params->cli[seq->firstNode] ;
 	Client * lastCli  = &params->cli[seq->lastNode] ;
-	Client * VCli = &params->cli[V_customer_or_depot_idx] ;
+	Client * VCli = &params->cli[V_cluster_idx] ;
 	distance = 1.e20 ;
 
 	for (int i=0 ; i < VCli->ar_nbNodes ; i++)
@@ -191,8 +191,8 @@ void SeqData::concatOneBefore(SeqData * seq,int V_customer_or_depot_idx, Individ
 		}
 	}
 
-	load = seq->load + params->cli[V_customer_or_depot_idx].demand;
-	firstNode = V_customer_or_depot_idx ;
+	load = seq->load + params->cli[V_cluster_idx].demand;
+	firstNode = V_cluster_idx ;
 	lastNode = seq->lastNode ;
 }
 

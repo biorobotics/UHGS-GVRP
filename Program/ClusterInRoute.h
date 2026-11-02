@@ -24,7 +24,7 @@ using namespace std;
 class Route ;
 #include "Route.h"
 
-class Noeud
+class ClusterInRoute
 {
 
 public :
@@ -36,7 +36,7 @@ Params * params ;
 bool isDepot ;
 
 // index of the depot or customer
-int customer_or_depot_idx ;
+int cluster_idx ;
 
 // place in the route
 int place ;
@@ -46,10 +46,10 @@ int place ;
 bool isPresent ;
 
 // next depot or client in the route
-Noeud * successor ;
+ClusterInRoute * successor ;
 
 // previous depot or client in the route
-Noeud * pred ;
+ClusterInRoute * pred ;
 
 // associated route
 Route * route ;
@@ -73,19 +73,19 @@ SeqData * seq321 ; // data for (i+2,i+1,i)
 vector < int > moves ;
 
 // constructor 1
-Noeud(void);
+ClusterInRoute(void);
 	
 // constructor 2
-Noeud(bool isDepot, int customer_or_depot_index, bool isPresent, Noeud * successor , Noeud * pred, Route * route,Params * params);
+ClusterInRoute(bool isDepot, int customer_or_depot_index, bool isPresent, ClusterInRoute * successor , ClusterInRoute * pred, Route * route,Params * params);
 
 // destructor
-~Noeud(void);
+~ClusterInRoute(void);
 
 // Copy constructor
-Noeud(Noeud const& copy) ;
+ClusterInRoute(ClusterInRoute const& copy) ;
 
 // Assignment operator in terms of the copy constructor
-Noeud& operator=(Noeud const& copy);
+ClusterInRoute& operator=(ClusterInRoute const& copy);
 
 // little function to correctly initialize the pointers
 void setRemaining();

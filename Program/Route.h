@@ -21,12 +21,12 @@
 
 #include "Params.h"
 #include "SeqData.h"
-#include "Noeud.h"
+#include "ClusterInRoute.h"
 #include <stdlib.h>
 #include <iostream>
 #include <vector>
 #include <math.h>
-class Noeud ;
+class ClusterInRoute ;
 using namespace std ;
 
 class Route
@@ -43,10 +43,10 @@ Individu * individu ;
 public:
 
 // Index of the route
-int customer_or_depot_idx ;
+int cluster_idx ;
 
 // Depot node associated to the route
-Noeud * depot ;
+ClusterInRoute * depot ;
 
 // Vehicle associated to the route
 Vehicle * vehicle ;
@@ -73,7 +73,7 @@ void testSeqDatas();
 
 Route(void);
 
-Route(int customer_or_depot_idx, Noeud * depot, Vehicle * vehicle, Params * params, Individu * indiv);
+Route(int cluster_idx, ClusterInRoute * depot, Vehicle * vehicle, Params * params, Individu * indiv);
 
 ~Route(void);
 };

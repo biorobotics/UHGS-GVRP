@@ -358,9 +358,9 @@ void Individu::updateLS()
 	// Loading the local search structures
 	// Warning, Split must have been computed before
 	int i,j ;
-	Noeud * myDepot ;
-	Noeud * myDepotFin ;
-	Noeud * myClient ;
+	ClusterInRoute * myDepot ;
+	ClusterInRoute * myDepotFin ;
+	ClusterInRoute * myClient ;
 	Route * myRoute ;
 
 	// we reinitialize the "shuffledDepotAndCustomerIndices" vector
@@ -394,10 +394,10 @@ void Individu::updateLS()
 			myClient->successor = myDepotFin ;
 			myClient->route = myRoute ;
 			myClient->isPresent = true ;
-			localSearch->nodeTestedForEachRoute(myClient->customer_or_depot_idx);
+			localSearch->nodeTestedForEachRoute(myClient->cluster_idx);
 			myDepot->successor = myClient ;
 			myDepotFin->pred = myClient ;
-			localSearch->shuffledDepotAndCustomerIndices.push_back(myClient->customer_or_depot_idx);
+			localSearch->shuffledDepotAndCustomerIndices.push_back(myClient->cluster_idx);
 		}
 		else if (j > i+1)
 		{
@@ -407,9 +407,9 @@ void Individu::updateLS()
 			myClient->successor = &localSearch->clients[chromT[i+1]] ;
 			myClient->route = myRoute ;
 			myClient->isPresent = true ;
-			localSearch->nodeTestedForEachRoute(myClient->customer_or_depot_idx);
+			localSearch->nodeTestedForEachRoute(myClient->cluster_idx);
 			myDepot->successor = myClient ;
-			localSearch->shuffledDepotAndCustomerIndices.push_back(myClient->customer_or_depot_idx);
+			localSearch->shuffledDepotAndCustomerIndices.push_back(myClient->cluster_idx);
 
 			// information for the end of the route
 			myClient = &localSearch->clients[chromT[j-1]] ;
@@ -417,9 +417,9 @@ void Individu::updateLS()
 			myClient->successor = myDepotFin ;
 			myClient->route = myRoute ;
 			myClient->isPresent = true ;
-			localSearch->nodeTestedForEachRoute(myClient->customer_or_depot_idx);
+			localSearch->nodeTestedForEachRoute(myClient->cluster_idx);
 			myDepotFin->pred = myClient ;
-			localSearch->shuffledDepotAndCustomerIndices.push_back(myClient->customer_or_depot_idx);
+			localSearch->shuffledDepotAndCustomerIndices.push_back(myClient->cluster_idx);
 
 			// and the middle
 			for ( int k = (int)i+1 ; k <= j-2 ; k++ )
@@ -429,8 +429,8 @@ void Individu::updateLS()
 				myClient->successor = &localSearch->clients[chromT[k+1]] ;
 				myClient->route =  myRoute ;
 				myClient->isPresent = true ;
-				localSearch->nodeTestedForEachRoute(myClient->customer_or_depot_idx);
-				localSearch->shuffledDepotAndCustomerIndices.push_back(myClient->customer_or_depot_idx);
+				localSearch->nodeTestedForEachRoute(myClient->cluster_idx);
+				localSearch->shuffledDepotAndCustomerIndices.push_back(myClient->cluster_idx);
 			}
 		}
 		j = i ;
@@ -450,7 +450,7 @@ void Individu::updateIndiv()
 	// Now, we go through the LS structure to update the individual (its chromosomes)
 	int pos ; 
 	vector < Route * > ordreRoutes ;
-	Noeud * node ;
+	ClusterInRoute * node ;
 
   ordreRoutes.clear();
   for (int ii=0 ; ii < params->nombreVehicules ; ii++)
@@ -462,7 +462,7 @@ void Individu::updateIndiv()
     node = ordreRoutes[r]->depot->successor ;
     while (!node->isDepot)
     {
-      chromT[pos]= node->customer_or_depot_idx;
+      chromT[pos]= node->cluster_idx;
       node = node->successor ;
       pos ++ ;
     }

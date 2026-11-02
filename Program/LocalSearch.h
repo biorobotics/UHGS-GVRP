@@ -22,7 +22,7 @@
 // EPSILON GAP in the local search, to avoid numerical issues when accepting improvement
 #define EPSILON_LS 0.001
 
-#include "Noeud.h"
+#include "ClusterInRoute.h"
 #include "SeqData.h"
 #include <stdlib.h>
 #include <stdio.h> 
@@ -53,10 +53,10 @@ private:
 	Individu * individu ;
 
 	// Small pointers and variables which are used during the LS
-	Noeud * noeudU ;
-	Noeud * x ;
-    Noeud * noeudV ;
-	Noeud * y ;
+	ClusterInRoute * noeudU ;
+	ClusterInRoute * x ;
+    ClusterInRoute * noeudV ;
+	ClusterInRoute * y ;
 	Route * routeU ;
 	Route * routeV ;
 	Vehicle * vehicleU ;
@@ -108,9 +108,9 @@ public:
 
 	// Linked list of the customer (used to store the solution)
 	// there is a pointer for the successor and the predecessor, as well as for the route and pre-processed data structures
-	Noeud * clients ; // Elements representing the customers
-	Noeud * depots ; // Elements representing the depots
-	Noeud * depotsFin ; // Sentinels at the end of the routes
+	ClusterInRoute * clients ; // Elements representing the customers
+	ClusterInRoute * depots ; // Elements representing the depots
+	ClusterInRoute * depotsFin ; // Sentinels at the end of the routes
 	Route * routes ; // Elements representing the routes
 
 	// running the complete local search (RI-)
@@ -125,15 +125,15 @@ public:
 
 	/* ROUTINES USED TO MODIFY THE SOLUTION, WHEN APPLYING A MOVE */
 
-	void insertNoeud(Noeud * U, Noeud * V) ; // Inserts client U after V
-	void removeNoeud(Noeud * U) ; // Removes client U
-	void addNoeud(Noeud * U, Noeud * V) ; // Adds client U after V
+	void insertClusterInRoute(ClusterInRoute * U, ClusterInRoute * V) ; // Inserts client U after V
+	void removeClusterInRoute(ClusterInRoute * U) ; // Removes client U
+	void addClusterInRoute(ClusterInRoute * U, ClusterInRoute * V) ; // Adds client U after V
 
 	// To call intra-route moves on smaller sequences
 	// if a limit on the size of the subsequence is set, it will cut the seqdata in smaller pieces
 	// By default, there we use an upper bound,  such that all subsequences have been preprocessed (cf Params.h)
-	inline void addSeqDataInPieces (Noeud * node, int length);
-	inline void addReverseSeqDataInPieces (Noeud * node, int length); // the same with the reverse sequence. For 2-opt moves.
+	inline void addSeqDataInPieces (ClusterInRoute * node, int length);
+	inline void addReverseSeqDataInPieces (ClusterInRoute * node, int length); // the same with the reverse sequence. For 2-opt moves.
 
 	// Constructor
 	LocalSearch();

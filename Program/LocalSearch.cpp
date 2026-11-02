@@ -44,7 +44,7 @@ int LocalSearch::mutation ()
 	int moveEffectue = 0;
 	int nbMoves = 0;
 	bool routeVideTestee ;
-	Noeud * tempNoeud ;
+	ClusterInRoute * tempClusterInRoute ;
 	int size2 ;
 
 	// We search and apply moves until a local minimum is attained
@@ -82,20 +82,20 @@ int LocalSearch::mutation ()
 
 				// If we have not yet tested the moves involving the node U and the route of node V
 				// (This flag is reset to false as soon as there is a modification in the route)
-				if (!noeudV->route->nodeAndRouteTested[noeudU->customer_or_depot_idx])
+				if (!noeudV->route->nodeAndRouteTested[noeudU->cluster_idx])
 				{
 					y = noeudV->successor ;
-					if (routeV->customer_or_depot_idx != routeU->customer_or_depot_idx)
+					if (routeV->cluster_idx != routeU->cluster_idx)
 					{
 						if (moveEffectue != 1)
 						{
-							tempNoeud = noeudV ;
+							tempClusterInRoute = noeudV ;
 							noeudV = noeudV->successor ;
 							y = noeudV->successor ;
 							// Testing Relocate, Swap, CROSS and I-CROSS (limited to 2 customers) of nodeU and nodeV 
 							// Case where they are in different routes
 							if (gainWhenRemoving) moveEffectue = interRouteGeneralInsert(); 
-							noeudV = tempNoeud ;
+							noeudV = tempClusterInRoute ;
 							y = noeudV->successor ;
 						}
 
@@ -109,7 +109,7 @@ int LocalSearch::mutation ()
 					}
 					else
 					{
-						tempNoeud = noeudV ;
+						tempClusterInRoute = noeudV ;
 						noeudV = noeudV->successor ;
 						y = noeudV->successor ;
 
@@ -117,7 +117,7 @@ int LocalSearch::mutation ()
 						// Case where they are in the same route
 						if (moveEffectue != 1 && gainWhenRemoving) 
 							moveEffectue = intraRouteGeneralInsertDroite();
-						noeudV = tempNoeud ;
+						noeudV = tempClusterInRoute ;
 						y = noeudV->successor ;
 					}
 				}
@@ -127,12 +127,12 @@ int LocalSearch::mutation ()
 			routeV = noeudV->route ;
 			vehicleV = routeV->vehicle ;
 			y = noeudV->successor ;
-			if (!noeudV->route->nodeAndRouteTested[noeudU->customer_or_depot_idx])
+			if (!noeudV->route->nodeAndRouteTested[noeudU->cluster_idx])
 			{
 				while (moveEffectue != 1 && !noeudV->isDepot)
 				{ 
 					// Testing 2-Opt between U and V (if the restriction of the granular search allows) 
-					if (params->isCorrelated[noeudU->pred->customer_or_depot_idx][noeudV->customer_or_depot_idx] || params->isCorrelated[noeudU->customer_or_depot_idx][noeudV->successor->customer_or_depot_idx]) 
+					if (params->isCorrelated[noeudU->pred->cluster_idx][noeudV->cluster_idx] || params->isCorrelated[noeudU->cluster_idx][noeudV->successor->cluster_idx]) 
 						moveEffectue = intraRoute2Opt ();
 					noeudV = noeudV->successor ;
 					y = noeudV->successor ;
@@ -145,44 +145,44 @@ int LocalSearch::mutation ()
 				noeudV = &depots[route] ;
 				routeV = noeudV->route ;
 				y = noeudV->successor ;
-				if ( (!noeudV->route->nodeAndRouteTested[noeudU->customer_or_depot_idx]) && (!y->isDepot || !routeVideTestee))
+				if ( (!noeudV->route->nodeAndRouteTested[noeudU->cluster_idx]) && (!y->isDepot || !routeVideTestee))
 				{
 					if (y->isDepot) routeVideTestee = true ;
 					if (routeV != routeU)
 					{
-						tempNoeud = noeudV ;
+						tempClusterInRoute = noeudV ;
 						noeudV = depots[route].successor ;
 						y = noeudV->successor ;
 
 						// Insertion after the depot, in a different route
-						if (gainWhenRemoving && (params->isCorrelated[noeudU->customer_or_depot_idx][noeudV->customer_or_depot_idx] || params->isCorrelated[noeudU->customer_or_depot_idx][y->customer_or_depot_idx]) && moveEffectue != 1 ) 
+						if (gainWhenRemoving && (params->isCorrelated[noeudU->cluster_idx][noeudV->cluster_idx] || params->isCorrelated[noeudU->cluster_idx][y->cluster_idx]) && moveEffectue != 1 ) 
 							moveEffectue = interRouteGeneralInsert();
 
 						noeudV = noeudV->route->depot ;
 						y = noeudV->successor ;
 
 						// 2-Opt* after the depot
-						if (params->isCorrelated[noeudU->pred->customer_or_depot_idx][noeudV->customer_or_depot_idx] && moveEffectue != 1) 
+						if (params->isCorrelated[noeudU->pred->cluster_idx][noeudV->cluster_idx] && moveEffectue != 1) 
 							moveEffectue = interRoute2Opt ();
 
 						// 2-Opt* after the depot
-						if ((params->isCorrelated[x->customer_or_depot_idx][y->customer_or_depot_idx] || params->isCorrelated[y->customer_or_depot_idx][x->customer_or_depot_idx]) && moveEffectue != 1) 
+						if ((params->isCorrelated[x->cluster_idx][y->cluster_idx] || params->isCorrelated[y->cluster_idx][x->cluster_idx]) && moveEffectue != 1) 
 							moveEffectue = interRoute2OptInv ();
 
-						noeudV = tempNoeud ;
+						noeudV = tempClusterInRoute ;
 						y = noeudV->successor ;
 					}
 					else
 					{
-						tempNoeud = noeudV ;
+						tempClusterInRoute = noeudV ;
 						noeudV = depots[route].successor ;
 						y = noeudV->successor ;
 
 						// Insertion after the depot, in the same route
-						if ((params->isCorrelated[noeudU->customer_or_depot_idx][noeudV->customer_or_depot_idx] || params->isCorrelated[noeudU->customer_or_depot_idx][y->customer_or_depot_idx]) && moveEffectue != 1) 
+						if ((params->isCorrelated[noeudU->cluster_idx][noeudV->cluster_idx] || params->isCorrelated[noeudU->cluster_idx][y->cluster_idx]) && moveEffectue != 1) 
 							moveEffectue = intraRouteGeneralInsertDroite();
 
-						noeudV = tempNoeud ;
+						noeudV = tempClusterInRoute ;
 						y = noeudV->successor ;
 					}
 				}
@@ -190,7 +190,7 @@ int LocalSearch::mutation ()
 
 			// Say that we have tested the node U with all routes
 			if (moveEffectue == 0)
-				nodeTestedForEachRoute(noeudU->customer_or_depot_idx);
+				nodeTestedForEachRoute(noeudU->cluster_idx);
 		}
 	}
 	return nbMoves ;
@@ -397,19 +397,19 @@ int LocalSearch::interRouteGeneralInsert()
 
 	/* AN IMPROVING MOVE HAS BEEN DETECTED, IT IS DIRECTLY APPLIED */
 
-	Noeud * placeV = noeudV->pred ;
-	Noeud * placeU = noeudU->pred ;
+	ClusterInRoute * placeV = noeudV->pred ;
+	ClusterInRoute * placeU = noeudU->pred ;
 	reinitMoves(placeU->route); // Say that all moves involving this route must be tested again
 	reinitMoves(placeV->route); // Say that all moves involving this route must be tested again
 
 	// Moving the nodes in the solution structure
-	if ( ibest == 1 || ibest == 2) insertNoeud(noeudU,placeV);
-	if ( ibest == 2) insertNoeud(x,noeudU);
-	if ( ibest == 3 ) { insertNoeud(x,placeV); insertNoeud(noeudU,x); }
+	if ( ibest == 1 || ibest == 2) insertClusterInRoute(noeudU,placeV);
+	if ( ibest == 2) insertClusterInRoute(x,noeudU);
+	if ( ibest == 3 ) { insertClusterInRoute(x,placeV); insertClusterInRoute(noeudU,x); }
 
-	if ( jbest == 1 || jbest == 2) insertNoeud(noeudV,placeU);
-	if ( jbest == 2) insertNoeud(y,noeudV);
-	if ( jbest == 3 ) { insertNoeud(y,placeU); insertNoeud(noeudV,y); }
+	if ( jbest == 1 || jbest == 2) insertClusterInRoute(noeudV,placeU);
+	if ( jbest == 2) insertClusterInRoute(y,noeudV);
+	if ( jbest == 3 ) { insertClusterInRoute(y,placeU); insertClusterInRoute(noeudV,y); }
 
 	// Update the pre-processed data on the subsequences of the route
 	placeU->route->updateRouteData(false);
@@ -427,7 +427,7 @@ int LocalSearch::interRoute2Opt ()
 	double cost ;
 	SeqData * seq = noeudU->seq0_i ;
 
-	if  (routeU->depot->customer_or_depot_idx != routeV->depot->customer_or_depot_idx || (noeudU->pred->isDepot && noeudV->isDepot)) 
+	if  (routeU->depot->cluster_idx != routeV->depot->cluster_idx || (noeudU->pred->isDepot && noeudV->isDepot)) 
 		return 0 ; // Cannot do a 2-Opt* if the depot is placed in the wrong way
 
 	double costZero = routeU->currentRouteCost + routeV->currentRouteCost ; // Cost before the move
@@ -446,17 +446,17 @@ int LocalSearch::interRoute2Opt ()
 
 	reinitMoves(routeU);  // Say that all moves involving this route must be tested again
 	reinitMoves(routeV);  // Say that all moves involving this route must be tested again
-	Noeud * tempU = noeudU ;
+	ClusterInRoute * tempU = noeudU ;
 	noeudU = noeudU->pred ;
 	x = noeudU->successor ;
 
 	// Updating the solution
-	Noeud * count ;
-	Noeud * depotU = routeU->depot ;
-	Noeud * depotV = routeV->depot ;
-	Noeud * depotUFin = depotU->pred ;
-	Noeud * depotVFin = depotV->pred ;
-	Noeud * depotUpred = depotUFin->pred ;
+	ClusterInRoute * count ;
+	ClusterInRoute * depotU = routeU->depot ;
+	ClusterInRoute * depotV = routeV->depot ;
+	ClusterInRoute * depotUFin = depotU->pred ;
+	ClusterInRoute * depotVFin = depotV->pred ;
+	ClusterInRoute * depotUpred = depotUFin->pred ;
 
 	count = y ;
 	while ( !count->isDepot )
@@ -550,16 +550,16 @@ int LocalSearch::interRoute2OptInv()
 
 	reinitMoves(noeudU->route);  // Say that all moves involving this route must be tested again
 	reinitMoves(noeudV->route);  // Say that all moves involving this route must be tested again
-	Noeud * depotU = routeU->depot ;
-	Noeud * depotV = routeV->depot ;
-	Noeud * depotUFin = routeU->depot->pred ;
-	Noeud * depotVFin = routeV->depot->pred ;
-	Noeud * depotUSuiv = depotU->successor ;
+	ClusterInRoute * depotU = routeU->depot ;
+	ClusterInRoute * depotV = routeV->depot ;
+	ClusterInRoute * depotUFin = routeU->depot->pred ;
+	ClusterInRoute * depotVFin = routeV->depot->pred ;
+	ClusterInRoute * depotUSuiv = depotU->successor ;
 
 	// Update the solution
-	Noeud * temp ;
-	Noeud * yy = y ;
-	Noeud * uu = noeudU ;
+	ClusterInRoute * temp ;
+	ClusterInRoute * yy = y ;
+	ClusterInRoute * uu = noeudU ;
 
 	while ( !yy->isDepot )
 	{
@@ -625,8 +625,8 @@ int LocalSearch::interRoute2OptInv()
 int LocalSearch::intraRouteGeneralInsertDroite ()
 {
 	// For a pair of nodes U, V, IN THE SAME ROUTE, tests together the Relocate, Swap, and variants of CROSS and I-CROSS limited to two consecutive nodes.
-	Noeud * tempU = noeudU ;
-	Noeud * tempV = noeudV ;
+	ClusterInRoute * tempU = noeudU ;
+	ClusterInRoute * tempV = noeudV ;
 	bool turned = false ;
 
 	int decalage = noeudV->place - noeudU->place ; // Decalage is the difference of index between U and V
@@ -648,11 +648,11 @@ int LocalSearch::intraRouteGeneralInsertDroite ()
 	double moveMin ;
 	int ibest, jbest ;
 	SeqData * seq = noeudU->seq0_i ;
-	Noeud * Upred = noeudU->pred ;
-	Noeud * placeU = noeudU->pred ;
-	Noeud * placeV = noeudV->pred ;
-	Noeud * xsuccessor = x->successor ;
-	Noeud * ysuccessor = y->successor ;
+	ClusterInRoute * Upred = noeudU->pred ;
+	ClusterInRoute * placeU = noeudU->pred ;
+	ClusterInRoute * placeV = noeudV->pred ;
+	ClusterInRoute * xsuccessor = x->successor ;
+	ClusterInRoute * ysuccessor = y->successor ;
 	double costZero = routeU->currentRouteCost ;
 
 	// This table will keep the result of the moves
@@ -1107,25 +1107,25 @@ int LocalSearch::intraRouteGeneralInsertDroite ()
 	// Update the solution
 	if (decalage >= 3)
 	{
-		if ( ibest == 1 || ibest == 2) insertNoeud(noeudU,placeV);
-		if ( ibest == 2 ) insertNoeud(x,noeudU);
-		if ( ibest == 3 ) { insertNoeud(x,placeV); insertNoeud(noeudU,x); }
+		if ( ibest == 1 || ibest == 2) insertClusterInRoute(noeudU,placeV);
+		if ( ibest == 2 ) insertClusterInRoute(x,noeudU);
+		if ( ibest == 3 ) { insertClusterInRoute(x,placeV); insertClusterInRoute(noeudU,x); }
 
-		if ( jbest == 1 || jbest == 2) insertNoeud(noeudV,placeU);
-		if ( jbest == 2) insertNoeud(y,noeudV);
-		if ( jbest == 3 ) { insertNoeud(y,placeU); insertNoeud(noeudV,y); }
+		if ( jbest == 1 || jbest == 2) insertClusterInRoute(noeudV,placeU);
+		if ( jbest == 2) insertClusterInRoute(y,noeudV);
+		if ( jbest == 3 ) { insertClusterInRoute(y,placeU); insertClusterInRoute(noeudV,y); }
 	}
 
 	// Special cases of decalage == 2
 	else if (decalage == 2)
 	{
-		if (ibest == 1 && jbest == 0) { insertNoeud(noeudU,x); }
-		else if (ibest == 1 && jbest == 1) { insertNoeud(x,noeudV); insertNoeud(noeudU,x);  }
-		else if (ibest == 1 && jbest == 2) { insertNoeud(x,y); insertNoeud(noeudU,x);  }
-		else if (ibest == 1 && jbest == 3) { insertNoeud(noeudV,y); insertNoeud(x,noeudV); insertNoeud(noeudU,x);  }
-		else if (ibest == 2 && jbest == 1) { insertNoeud(noeudV,noeudU->pred) ;  }
-		else if (ibest == 2 && jbest == 2) { insertNoeud(noeudV,noeudU->pred) ;  insertNoeud(y,noeudV) ; }
-		else if (ibest == 2 && jbest == 3) { insertNoeud(y,noeudU->pred) ;  insertNoeud(noeudV,y) ; }
+		if (ibest == 1 && jbest == 0) { insertClusterInRoute(noeudU,x); }
+		else if (ibest == 1 && jbest == 1) { insertClusterInRoute(x,noeudV); insertClusterInRoute(noeudU,x);  }
+		else if (ibest == 1 && jbest == 2) { insertClusterInRoute(x,y); insertClusterInRoute(noeudU,x);  }
+		else if (ibest == 1 && jbest == 3) { insertClusterInRoute(noeudV,y); insertClusterInRoute(x,noeudV); insertClusterInRoute(noeudU,x);  }
+		else if (ibest == 2 && jbest == 1) { insertClusterInRoute(noeudV,noeudU->pred) ;  }
+		else if (ibest == 2 && jbest == 2) { insertClusterInRoute(noeudV,noeudU->pred) ;  insertClusterInRoute(y,noeudV) ; }
+		else if (ibest == 2 && jbest == 3) { insertClusterInRoute(y,noeudU->pred) ;  insertClusterInRoute(noeudV,y) ; }
 		else throw string ("ERROR move intra-route") ;
 	} 
 
@@ -1144,9 +1144,9 @@ int LocalSearch::intraRouteGeneralInsertDroite ()
 int LocalSearch::intraRoute2Opt ()
 {
 	// Evaluation procedure for 2-Opt
-	Noeud * nodeNum = noeudU->successor ;
-	Noeud * nodeUpred = noeudU->pred ;
-	Noeud * temp ;
+	ClusterInRoute * nodeNum = noeudU->successor ;
+	ClusterInRoute * nodeUpred = noeudU->pred ;
+	ClusterInRoute * temp ;
 	SeqData * seq = noeudU->seq0_i ;
 
 	double cost ;
@@ -1237,7 +1237,7 @@ void LocalSearch::nodeTestedForEachRoute (int cli)
 		routes[route].nodeAndRouteTested[cli]=true ;	
 }
 
-void LocalSearch::insertNoeud(Noeud * U, Noeud * V)
+void LocalSearch::insertClusterInRoute(ClusterInRoute * U, ClusterInRoute * V)
 {
 	if (U->pred != V && U != V)
 	{
@@ -1256,9 +1256,9 @@ void LocalSearch::reinitMoves(Route * r)
 	for (int i=0 ; i < params->nbClients + params->nbDepots ; i ++ )
 		r->nodeAndRouteTested[i] = false ;
 
-	for (Noeud * tempNoeud = r->depot->successor ; !tempNoeud->isDepot ; tempNoeud = tempNoeud->successor)
+	for (ClusterInRoute * tempClusterInRoute = r->depot->successor ; !tempClusterInRoute->isDepot ; tempClusterInRoute = tempClusterInRoute->successor)
 		for (int route = 0 ; route < params->nbVehiculesPerDep ; route ++)
-			depots[route].route->nodeAndRouteTested[tempNoeud->customer_or_depot_idx] = false ;
+			depots[route].route->nodeAndRouteTested[tempClusterInRoute->cluster_idx] = false ;
 }
 
 void LocalSearch::reinitAllMoves()
@@ -1268,9 +1268,9 @@ void LocalSearch::reinitAllMoves()
       depots[route].route->nodeAndRouteTested[i] = false ;
 }
 
-void LocalSearch::addSeqDataInPieces (Noeud * node, int length)
+void LocalSearch::addSeqDataInPieces (ClusterInRoute * node, int length)
 {
-	Noeud * curNode = node ;
+	ClusterInRoute * curNode = node ;
 	SeqData * curSeq ;
 	int curLength = length + 1 ;
 	int temp ;
@@ -1284,9 +1284,9 @@ void LocalSearch::addSeqDataInPieces (Noeud * node, int length)
 	}
 }
 
-void LocalSearch::addReverseSeqDataInPieces (Noeud * node, int length)
+void LocalSearch::addReverseSeqDataInPieces (ClusterInRoute * node, int length)
 {
-	Noeud * curNode = node ;
+	ClusterInRoute * curNode = node ;
 	SeqData * curSeq ;
 	list <SeqData*> myseqTemp ;
 	int curLength = length + 1 ;
@@ -1320,22 +1320,22 @@ LocalSearch::LocalSearch(Params * params,Individu * individu) : params (params),
 	nbIntra2Opt = 0 ;
 	seqdeb = NULL ;
 	nbTotalRISinceBeginning = 0 ;
-	vector < Noeud * > tempNoeud ;
+	vector < ClusterInRoute * > tempClusterInRoute ;
 	vector <int> temp2 ;
 
 	nbVeh = params->nombreVehicules ;
-	clients = new Noeud [params->nbClients + params->nbDepots + 1] ;
-	depots = new Noeud [nbVeh] ;
-	depotsFin = new Noeud [nbVeh] ;
+	clients = new ClusterInRoute [params->nbClients + params->nbDepots + 1] ;
+	depots = new ClusterInRoute [nbVeh] ;
+	depotsFin = new ClusterInRoute [nbVeh] ;
 	routes = new Route [nbVeh] ; 
 
 	for (int i = 0 ; i <  params->nbClients + params->nbDepots ; i ++ )
-		clients[i] = Noeud(false,i,false,NULL,NULL,NULL,params);
+		clients[i] = ClusterInRoute(false,i,false,NULL,NULL,NULL,params);
 
 	for (int i = 0 ; i < nbVeh ; i++ )
 	{
-		depots[i] = Noeud(true,params->ordreVehicules[i].depotNumber,false,NULL,NULL,NULL,params);
-		depotsFin[i] = Noeud(true,params->ordreVehicules[i].depotNumber,false,NULL,NULL,NULL,params);
+		depots[i] = ClusterInRoute(true,params->ordreVehicules[i].depotNumber,false,NULL,NULL,NULL,params);
+		depotsFin[i] = ClusterInRoute(true,params->ordreVehicules[i].depotNumber,false,NULL,NULL,NULL,params);
 		routes[i] = Route(i,0,&params->ordreVehicules[i],params,individu);
 		depots[i].route = &routes[i] ;
 		depotsFin[i].route = &routes[i] ;
@@ -1363,7 +1363,7 @@ LocalSearch::LocalSearch(Params * params,Individu * individu) : params (params),
 	for (int i=0 ; i < params->nbClients + params->nbDepots ; i++) 
 	{
 		for (int ii=nbSeqsSet ; ii < nbSeqsSet+4+params->sizeSD+params->sizeSD ; ii++)
-			myseqDatas[ii].initialisation(clients[i].customer_or_depot_idx,params,individu,false);  
+			myseqDatas[ii].initialisation(clients[i].cluster_idx,params,individu,false);  
 
 		clients[i].seq0_i = &myseqDatas[nbSeqsSet] ;
 		clients[i].seqi_n = &myseqDatas[nbSeqsSet+1] ;
@@ -1380,7 +1380,7 @@ LocalSearch::LocalSearch(Params * params,Individu * individu) : params (params),
 	for (int i=0 ; i < params->nbVehiculesPerDep  ; i++) 
 	{
 		for (int ii=nbSeqsSet ; ii < nbSeqsSet+4+params->sizeSD+params->sizeSD ; ii++)
-			myseqDatas[ii].initialisation(depots[i].customer_or_depot_idx,params,individu,false);
+			myseqDatas[ii].initialisation(depots[i].cluster_idx,params,individu,false);
 
 		depots[i].seq0_i = &myseqDatas[nbSeqsSet] ;
 		depots[i].seqi_n = &myseqDatas[nbSeqsSet+1] ;
@@ -1397,7 +1397,7 @@ LocalSearch::LocalSearch(Params * params,Individu * individu) : params (params),
 	for (int i=0 ; i < params->nbVehiculesPerDep ; i++) 
 	{
 		for (int ii=nbSeqsSet ; ii < nbSeqsSet+4+params->sizeSD+params->sizeSD ; ii++)
-			myseqDatas[ii].initialisation(depotsFin[i].customer_or_depot_idx,params,individu,false);
+			myseqDatas[ii].initialisation(depotsFin[i].cluster_idx,params,individu,false);
 
 		depotsFin[i].seq0_i = &myseqDatas[nbSeqsSet] ;
 		depotsFin[i].seqi_n = &myseqDatas[nbSeqsSet+1] ;

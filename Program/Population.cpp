@@ -397,7 +397,7 @@ bool Population::solutionChecker( vector < vector < int  > > & allRoutes,  vecto
 	double routeCost ;
 	double maxRouteLength = 0 ;
 	double totalLoad ;
-	int customer_or_depot_idx ;
+	int cluster_idx ;
 
 	// Verification of the load constraints
   for (int r=0 ; r < (int)allRoutes.size() ; r++)
@@ -418,8 +418,8 @@ bool Population::solutionChecker( vector < vector < int  > > & allRoutes,  vecto
     totalLoad = 0 ;
     for (int i=0 ; i < (int)allRoutes[r].size(); i++ )
     {
-      customer_or_depot_idx = allRoutes[r][i] ;
-      totalLoad += params->cli[customer_or_depot_idx].demand;
+      cluster_idx = allRoutes[r][i] ;
+      totalLoad += params->cli[cluster_idx].demand;
     }
     if (totalLoad < 0)
     {

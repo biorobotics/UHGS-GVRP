@@ -16,21 +16,21 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //  ---------------------------------------------------------------------- */
 
-#include "Noeud.h"
+#include "ClusterInRoute.h"
 
-Noeud::Noeud(void) {}
+ClusterInRoute::ClusterInRoute(void) {}
 
-Noeud::Noeud(bool isDepot, int customer_or_depot_idx,bool isPresent, Noeud * successor , Noeud * pred, Route * route,Params * params) 
-: params(params), isDepot(isDepot), customer_or_depot_idx(customer_or_depot_idx), isPresent(isPresent), successor(successor), pred(pred), route(route)
+ClusterInRoute::ClusterInRoute(bool isDepot, int cluster_idx,bool isPresent, ClusterInRoute * successor , ClusterInRoute * pred, Route * route,Params * params) 
+: params(params), isDepot(isDepot), cluster_idx(cluster_idx), isPresent(isPresent), successor(successor), pred(pred), route(route)
 {
 	place = -1 ;
 }
 
-Noeud::Noeud(Noeud const& copy)
+ClusterInRoute::ClusterInRoute(ClusterInRoute const& copy)
 {
 	// Copy constructor
 	isDepot = copy.isDepot ;
-	customer_or_depot_idx = copy.customer_or_depot_idx ;
+	cluster_idx = copy.cluster_idx ;
 	place = copy.place ;
 	isPresent = copy.isPresent ;
 	successor = copy.successor ;
@@ -40,11 +40,11 @@ Noeud::Noeud(Noeud const& copy)
 	moves = copy.moves ;
 }
 
-Noeud& Noeud::operator=(Noeud const& copy)
+ClusterInRoute& ClusterInRoute::operator=(ClusterInRoute const& copy)
 {
 	// Copy constructor
 	isDepot = copy.isDepot ;
-	customer_or_depot_idx = copy.customer_or_depot_idx ;
+	cluster_idx = copy.cluster_idx ;
 	place = copy.place ;
 	isPresent = copy.isPresent ;
 	successor = copy.successor ;
@@ -55,9 +55,9 @@ Noeud& Noeud::operator=(Noeud const& copy)
 	return *this;
 }
 
-Noeud::~Noeud(void){}
+ClusterInRoute::~ClusterInRoute(void){}
 
-void Noeud::setRemaining()
+void ClusterInRoute::setRemaining()
 {
 	// seq1 has exactly the same meaning than seqi_j[0], but its more convenient to use and read
 	seq1 = seqi_j[0] ;
