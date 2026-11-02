@@ -39,7 +39,7 @@ bool compPredicate(pairB i, pairB j)
 	return (i.myparams->timeCost[i.myInt][i.iCour] < i.myparams->timeCost[j.myInt][i.iCour]) ;
 }
 
-void Params::calculeStructures () 
+void Params::calculateStructures () 
 {
 	// Initializing other structures of the search
 	vector <bool> tempB2 ;
@@ -197,7 +197,7 @@ Params::Params(unsigned int seedRNG, int nbVeh, double vc, const Ref<const Vecto
 	setMethodParams();
 
 	// Computing the other data structures
-	calculeStructures();	
+	calculateStructures();	
 }
 
 Params::~Params(void)

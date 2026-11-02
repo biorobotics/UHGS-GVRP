@@ -144,7 +144,7 @@ public:
 	void getClient (int i, Client * myCli);
 
 	// builds the other data structures (granular search etc...)
-	void calculeStructures () ;
+	void calculateStructures () ;
 	
 	// shuffle the lists of closest customers
 	void shuffleProches () ;
