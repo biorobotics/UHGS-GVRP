@@ -110,7 +110,7 @@ void Genetic::evolveHGA (int maxIterNonProd, int nbRec)
 
 		// PENALTY MANAGEMENT
 		if (nbIter % 30 == 0) 
-			gererPenalites () ;
+			managePenalites () ;
 
 		// MORE TRACES
 		if (traces && nbIter % 500 == 0)
@@ -166,7 +166,7 @@ void Genetic::reparer ()
 	offspring->measureSol();
 }
 
-void Genetic::gererPenalites ()
+void Genetic::managePenalites ()
 {
 	bool changeDone = false ;
 	double fractionCapacityFeasible = population->fractionCapacityFeasible() ;

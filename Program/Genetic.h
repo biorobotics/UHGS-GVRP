@@ -78,7 +78,7 @@ public:
 	vector < int > freqClient ;
 
 	// regular management of the penalty coefficients
-	void gererPenalites ();
+	void managePenalites ();
 
 	// Constructor
 	Genetic(Params * params,Population * population, clock_t ticks, bool traces);
