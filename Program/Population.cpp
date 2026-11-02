@@ -247,23 +247,6 @@ void Population::diversify ()
 	}
 }
 
-void Population::clear()
-{
-	while ( valides->nbIndiv > 0)
-	{
-		delete valides->individus[valides->nbIndiv-1] ;
-		valides->individus.pop_back();
-		valides->nbIndiv -- ;
-	}
-
-	while ( invalides->nbIndiv > 0)
-	{
-		delete invalides->individus[invalides->nbIndiv-1] ;
-		invalides->individus.pop_back();
-		invalides->nbIndiv -- ;
-	}
-}
-
 int Population::placeIndividu(SousPop * pop, Individu * indiv)
 {
 	Individu * monIndiv = new Individu (params,false) ;
@@ -411,10 +394,8 @@ Individu * Population::getIndividuBestInvalide ()
 void Population::ExportBest (string nomFichier) 
 {
 	vector <int> rout ;
-	vector < vector < vector <int> > > allRoutes ; 
-	vector < vector < vector <int> > > allRoutesNodes ; 
-	allRoutes.push_back(vector < vector <int> > ());
-	allRoutesNodes.push_back(vector < vector <int> > ()) ;
+	 vector < vector <int > > allRoutes ; 
+	 vector < vector <int > > allRoutesNodes ; 
 	int compteur ;
 	Noeud * noeudActuel ;
 	LocalSearch * loc ;
@@ -436,7 +417,6 @@ void Population::ExportBest (string nomFichier)
 		params->penalityLength = temp2 ;
 
 		// Little debugging tests before printing
-		trainer->testPatternCorrectness();
 		if (!trainer->estValide || trainer->coutSol.lengthViol > 0.000001 || trainer->coutSol.capacityViol > 0.000001)
 			throw string("ERROR: Last individual became infeasible !!!!") ;
 		
@@ -450,16 +430,8 @@ void Population::ExportBest (string nomFichier)
     myfile << trainer->coutSol.distance << endl ;
 
 		// Writing the number of routes
-		if (params->periodique)
-		{
-			cout << " | nbRoutes : " << params->nbVehiculesPerDep ;
-			myfile << params->nbVehiculesPerDep << endl ;
-		}
-		else
-		{
-			cout << " | nbRoutes : " << trainer->nbRoutes ;
-			myfile << trainer->nbRoutes << endl ;
-		}
+    cout << " | nbRoutes : " << trainer->nbRoutes ;
+    myfile << trainer->nbRoutes << endl ;
 
 		cout << " | in " << nomFichier.c_str() << endl ;
 
@@ -472,56 +444,50 @@ void Population::ExportBest (string nomFichier)
 		myfile << (long long) timeBest << endl ;
 
 		// Printing the routes and their content
-		for (int k=1 ; k <= params->nbDays ; k++)
-		{
-			compteur = 1 ;
-			allRoutes.push_back(vector < vector <int> > ());
-			allRoutesNodes.push_back(vector < vector <int> > ()) ;
-			for (int i=0 ; i < params->nombreVehicules[k] ; i++)
-			{	
-				// Test if the route is empty
-				if (!loc->routes[k][i].depot->suiv->estUnDepot)
-				{
-					// The route is not empty
-					// First, we pre-process again the data structures on the route with the flag "true", which allow to track back the visits
-					loc->routes[k][i].updateRouteData(true); 
-					noeudActuel = loc->routes[k][i].depot->suiv ;
-					rout.clear();
-					rout.push_back(loc->routes[k][i].depot->cour);
-					rout.push_back(noeudActuel->cour);
+    compteur = 1 ;
+    for (int i=0 ; i < params->nombreVehicules ; i++)
+    {	
+      // Test if the route is empty
+      if (!loc->routes[i].depot->suiv->estUnDepot)
+      {
+        // The route is not empty
+        // First, we pre-process again the data structures on the route with the flag "true", which allow to track back the visits
+        loc->routes[i].updateRouteData(true); 
+        noeudActuel = loc->routes[i].depot->suiv ;
+        rout.clear();
+        rout.push_back(loc->routes[i].depot->cour);
+        rout.push_back(noeudActuel->cour);
 
-					while (!noeudActuel->estUnDepot)
-					{
-						noeudActuel = noeudActuel->suiv ;
-						rout.push_back(noeudActuel->cour);
-					}
+        while (!noeudActuel->estUnDepot)
+        {
+          noeudActuel = noeudActuel->suiv ;
+          rout.push_back(noeudActuel->cour);
+        }
 
-					allRoutes[k].push_back(rout);
-					allRoutesNodes[k].push_back(loc->routes[k][i].depot->pred->seq0_i->bestCostNodes[0][0]) ;
+        allRoutes.push_back(rout);
+        allRoutesNodes.push_back(loc->routes[i].depot->pred->seq0_i->bestCostNodes[0][0]) ;
 
-					if( loc->routes[k][i].depot->pred->seq0_i->bestCostNodes[0][0].size() != rout.size())
-						throw string ("Issue : mismatch between the route size and the number of arcs reported by the SeqData");
+        if( loc->routes[i].depot->pred->seq0_i->bestCostNodes[0][0].size() != rout.size())
+          throw string ("Issue : mismatch between the route size and the number of arcs reported by the SeqData");
 
-					myfile << " " << loc->routes[k][i].depot->cour ; // Printing the depot
-					myfile << " " << (k-1)%params->ancienNbDays + 1 ; // Printing the day
-					myfile << " " << compteur ; // Printing the index of the route
-					myfile << " " << loc->routes[k][i].depot->pred->seq0_i->load ; // Printing the total demand
-					myfile << " " << loc->routes[k][i].depot->pred->seq0_i->evaluation(loc->routes[k][i].depot->pred->seq0_i,loc->routes[k][i].vehicle) << " " ; // Printing the total cost of this route
-					
-					myfile << " " << (int)rout.size() ; // Printing the number of customers in the route
-					for (int j=0 ; j < (int)rout.size() ; j++ ) // Printing the visits 
-					{
-						if (rout[j] < params->nbDepots)
-							myfile << " (D " ;
-						else
-							myfile << " (S " ;
-						myfile << rout[j] << "," ;
-						myfile << loc->routes[k][i].depot->pred->seq0_i->bestCostNodes[0][0][j] << ")" ;
-					}
-					myfile << endl ;
-					compteur ++ ;
-				}
-			}
+        myfile << " " << loc->routes[i].depot->cour ; // Printing the depot
+        myfile << " " << compteur ; // Printing the index of the route
+        myfile << " " << loc->routes[i].depot->pred->seq0_i->load ; // Printing the total demand
+        myfile << " " << loc->routes[i].depot->pred->seq0_i->evaluation(loc->routes[i].depot->pred->seq0_i,loc->routes[i].vehicle) << " " ; // Printing the total cost of this route
+        
+        myfile << " " << (int)rout.size() ; // Printing the number of customers in the route
+        for (int j=0 ; j < (int)rout.size() ; j++ ) // Printing the visits 
+        {
+          if (rout[j] < params->nbDepots)
+            myfile << " (D " ;
+          else
+            myfile << " (S " ;
+          myfile << rout[j] << "," ;
+          myfile << loc->routes[i].depot->pred->seq0_i->bestCostNodes[0][0][j] << ")" ;
+        }
+        myfile << endl ;
+        compteur ++ ;
+      }
 		}
 
 		myfile.close();
@@ -544,7 +510,7 @@ void Population::ExportBest (string nomFichier)
 	}
 }
 
-bool Population::solutionChecker(vector < vector < vector < int > > > & allRoutes, vector < vector < vector <int> > > & allRoutesNodes, double expectedCost, double expectedMaxRoute)
+bool Population::solutionChecker( vector < vector < int  > > & allRoutes,  vector < vector <int > > & allRoutesNodes, double expectedCost, double expectedMaxRoute)
 {
 	double totalCost = 0 ;
 	double routeCost ;
@@ -552,95 +518,57 @@ bool Population::solutionChecker(vector < vector < vector < int > > > & allRoute
 	double totalLoad ;
 	int cour ;
 
-	// Verify that all customers are serviced
-	// For the PCARP, it will also compute the patterns of the deliveries and verify that its correct.
-	// This is done in a first step.
-	vector <int> currentPatterns = vector <int> (params->nbDepots + params->nbClients) ;
-	for (int d=1 ; d <= params->nbDays ; d++)
-	{
-		for (int r=0 ; r < (int)allRoutes[d].size() ; r++)
-		{
-			for (int i=1 ; i < (int)allRoutes[d][r].size() - 1; i++ )
-			{
-				currentPatterns[allRoutes[d][r][i]] += (int)pow(2.0,params->nbDays-d);
-			}
-		}
-	}
-
-	bool existsOneFeasiblePattern ;
-	for (int i = params->nbDepots ; i < params->nbDepots + params->nbClients ; i++)
-	{
-		existsOneFeasiblePattern = false ;
-		for (int p=0 ; p < (int)params->cli[i].visits.size() ; p++)
-		{
-			if (params->cli[i].visits[p].pat == currentPatterns[i]) {
-				existsOneFeasiblePattern = true ;
-      }
-		}
-		if (!existsOneFeasiblePattern)
-		{
-			cout << "SOLUTION CHECKER: Infeasible pattern" << endl ;
-			return false ;
-		}
-	}
-
 	// Verification of the load constraints
-	for (int d=1 ; d <= params->nbDays ; d++)
-	{
-		for (int r=0 ; r < (int)allRoutes[d].size() ; r++)
-		{
-			// For each route
-			if (allRoutes[d][r][0] >= params->nbDepots)
-			{
-				cout << "SOLUTION CHECKER: No depot at beginning of route" << endl ;
-				return false ;
-			}
+  for (int r=0 ; r < (int)allRoutes.size() ; r++)
+  {
+    // For each route
+    if (allRoutes[r][0] >= params->nbDepots)
+    {
+      cout << "SOLUTION CHECKER: No depot at beginning of route" << endl ;
+      return false ;
+    }
 
-			if (allRoutes[d][r][allRoutes[d][r].size()-1] >= params->nbDepots)
-			{
-				cout << "SOLUTION CHECKER: No depot at end of route" << endl ;
-				return false ;
-			}
+    if (allRoutes[r][allRoutes[r].size()-1] >= params->nbDepots)
+    {
+      cout << "SOLUTION CHECKER: No depot at end of route" << endl ;
+      return false ;
+    }
 
-			totalLoad = 0 ;
-			for (int i=0 ; i < (int)allRoutes[d][r].size(); i++ )
-			{
-				cour = allRoutes[d][r][i] ;
-        totalLoad += params->cli[cour].demandPatDay[currentPatterns[cour]][d] ;
-			}
-			if (totalLoad < 0)
-			{
-				cout << "SOLUTION CHECKER: Issue with the load" << endl ;
-				return false ;
-			}
+    totalLoad = 0 ;
+    for (int i=0 ; i < (int)allRoutes[r].size(); i++ )
+    {
+      cour = allRoutes[r][i] ;
+      totalLoad += params->cli[cour].demand;
+    }
+    if (totalLoad < 0)
+    {
+      cout << "SOLUTION CHECKER: Issue with the load" << endl ;
+      return false ;
+    }
 
-			else if (totalLoad > params->ordreVehicules[d][r].vehicleCapacity + 0.0001)
-			{
-				cout << "SOLUTION CHECKER: Violation of load constraint" << endl ;
-				return false ;
-			}
-		}
-	}
+    else if (totalLoad > params->ordreVehicules[r].vehicleCapacity + 0.0001)
+    {
+      cout << "SOLUTION CHECKER: Violation of load constraint" << endl ;
+      return false ;
+    }
+  }
 
 	// Verification of the solution cost
-	for (int d=1 ; d <= params->nbDays ; d++)
-	{
-		for (int r=0 ; r < (int)allRoutes[d].size() ; r++)
-		{
-			// For each route, sum the distances
-			routeCost = 0 ;
-			
-      for (int i=0 ; i < (int)allRoutesNodes[d][r].size()-1; i++ )
-      {
-        int node_idx1 = allRoutesNodes[d][r][i];
-        int node_idx2 = allRoutesNodes[d][r][i + 1];
-        routeCost += params->cost_mat[node_idx1][node_idx2] ;
-      }
-			if (routeCost > maxRouteLength) // Updating the maximum route cost
-				maxRouteLength = routeCost ;
-			totalCost += routeCost ; // Summing the costs
-		}
-	}
+  for (int r=0 ; r < (int)allRoutes.size() ; r++)
+  {
+    // For each route, sum the distances
+    routeCost = 0 ;
+    
+    for (int i=0 ; i < (int)allRoutesNodes[r].size()-1; i++ )
+    {
+      int node_idx1 = allRoutesNodes[r][i];
+      int node_idx2 = allRoutesNodes[r][i + 1];
+      routeCost += params->cost_mat[node_idx1][node_idx2] ;
+    }
+    if (routeCost > maxRouteLength) // Updating the maximum route cost
+      maxRouteLength = routeCost ;
+    totalCost += routeCost ; // Summing the costs
+  }
 
 	if (totalCost != expectedCost)
 	{

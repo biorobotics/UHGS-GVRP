@@ -22,7 +22,6 @@ void Params::setMethodParams()
 {
 	/* MAIN PARAMETERS OF THE METHOD */
 
-	isILS_general = false ; // Are we running the ILS version of the code
 	mu = 25 ; // Population size
 	lambda = 40 ; // Number of individuals per generation
 	el = 12 ; // Number of elite
@@ -33,10 +32,6 @@ void Params::setMethodParams()
 	maxValides = 0.20 ; // Target proportion of feasible solution
 	penalityCapa = 50 ; // Initial penalties (will evolve during the search)
 	penalityLength = 50; // Initial penalties (will evolve during the search)
-
-	// The ELS/ILS requires slightly different parameter setting to get the right number of children and solutions, as specified in Prins 2009
-	if (isILS_general) 
-	{ mu = 5 ; lambda = 5 ; el = 1 ; minValides = 0.6 ; maxValides = 0.7 ; }
 }
 
 bool compPredicate(pairB i, pairB j) 
@@ -88,19 +83,12 @@ void Params::calculeStructures ()
 			isCorrelated[myVector[j].myInt][i] = true ;
 		}
 	}
-
-	for ( int i=0 ; i < nbDepots + nbClients ; i++ )
-	{
-		cli[i].computeVisitsDyn(nbDays,ancienNbDays);
-		cli[i].computeJourSuiv(nbDays,ancienNbDays);
-	}
 }
 
 void Params::getClient (int i, Client * myCli)
 {
 	// Reading/Initializing the data for each customer
 	string tempstring ;
-	pattern p ;
 	char * myChars = new char[100]; 
 	int t_arc, t_from, t_to, t_qty, t_trav, t_col, t_inv, t_freq ;
 	bool isNewService ;
@@ -119,19 +107,12 @@ void Params::getClient (int i, Client * myCli)
     myCli->ar_nodeType = AR_CLIENT_NODE ;
   }
 
-	// Setting the pattern information (on which day the customer can be visited)
-  p.dep = 0 ;
-  p.cost = 0 ;
-  p.pat = 1 ;
-  myCli->visits.push_back(p);
-  myCli->visitsOrigin.push_back(p);
-
 	if (i >= 1) nbTotalServices += myCli->freq ;
 	delete [] myChars ;
 }
 
 // vc is vehicle capacity. Assume depot cluster is cluster 0 and depot node is node 0
-Params::Params(unsigned int seedRNG, int nbVeh, double vc, const Ref<const VectorXd> &demand_per_cluster, bool take_first_soln, const std::vector<py::array_t<long>> &cluster_to_node_ptr, const Ref<const MatrixXd> &cost_mat, double cost_thresh):nbVehiculesPerDep(nbVeh), nbDepots(1), isSearchingFeasible(false), cost_thresh(cost_thresh)
+Params::Params(unsigned int seedRNG, int nbVeh, double vc, const Ref<const VectorXd> &demand_per_cluster, bool take_first_soln, const std::vector<py::array_t<long>> &cluster_to_node_ptr, const Ref<const MatrixXd> &cost_mat, double cost_thresh):nbVehiculesPerDep(nbVeh), isSearchingFeasible(false), cost_thresh(cost_thresh)
 {
 	// Main constructor of Params
 	borne = 2.0 ;
@@ -144,38 +125,24 @@ Params::Params(unsigned int seedRNG, int nbVeh, double vc, const Ref<const Vecto
 		srand(seed);
     
 	// Formerly the code from preleveDonnees ();
-	vector <Vehicle> tempI ;
 	nbTotalServices = 0 ;
 	totalDemand = 0 ;
-	multiDepot = false ;
-	periodique = false ;
 
   int num_clusters = cluster_to_node_ptr.size() - 1; // Not including depot
   int num_nodes = cost_mat.rows();
 
 	// Setting the other instance parameters
-	nbDays = 1 ;
-	ancienNbDays = nbDays ;
 	nbClients = num_clusters;
 
-	// Building the list of vehicles (TODO: why do we have a day zero with zero vehicles and zero capacity?)
-	ordreVehicules.push_back(tempI) ;
-	nombreVehicules.push_back(0);
-	dayCapacity.push_back(0);
-	for (int kk=1 ; kk <= nbDays; kk ++)
-	{
-		ordreVehicules.push_back(tempI) ;
-		dayCapacity.push_back(0);
-		nombreVehicules.push_back(nbDepots*nbVehiculesPerDep);
-		for (int i=0 ; i < nbDepots ; i++)
-		{
-			for (int j=0 ; j < nbVehiculesPerDep ; j++)
-			{
-				ordreVehicules[kk].push_back(Vehicle(i,1000000,vc)); // Duration constraint set to a high value
-				dayCapacity[kk] += vc ;
-			}
-		}
-	}
+	// Building the list of vehicles
+  nombreVehicules = nbDepots*nbVehiculesPerDep;
+  for (int i=0 ; i < nbDepots ; i++)
+  {
+    for (int j=0 ; j < nbVehiculesPerDep ; j++)
+    {
+      ordreVehicules.push_back(Vehicle(i,1000000,vc)); // Duration constraint set to a high value
+    }
+  }
 
 	// Reading the list of customers 
 	cli = new Client [nbDepots + nbClients] ;

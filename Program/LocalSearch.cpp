@@ -29,34 +29,14 @@ void LocalSearch::runSearchTotal ()
 	/* RUNNING THE LS */
 	// RI -- Route improvement
 	updateMoves ();
-	reinitAllSingleDayMoves();
-	for (int day = 1 ; day <= params->nbDays ; day++)
-		nbMoves += mutationSameDay (day) ;
+	reinitAllMoves();
+  nbMoves += mutation () ;
 	nbTotalRISinceBeginning += nbMoves ;
-
-	// PI and RI local search (only for PCARP and MDCARP, see Vidal et al 2012 (OR)
-	if (params->periodique || params->multiDepot)
-	{
-		// PI -- Pattern improvement
-		nbMoves = mutationDifferentDay () ; 
-		nbTotalPISinceBeginning += nbMoves ;
-
-		if (nbMoves > 0)
-		{
-			// RI -- Route improvement
-			updateMoves (); 
-			reinitAllSingleDayMoves();
-			nbMoves = 0 ;
-			for (int day = 1 ; day <= params->nbDays ; day++)
-				nbMoves += mutationSameDay (day) ;
-			nbTotalRISinceBeginning += nbMoves ;
-		}
-	}
 }
 
-int LocalSearch::mutationSameDay (int day)
+int LocalSearch::mutation ()
 {
-	// Local Search for one given day
+	// Local Search
 	// Based on the classic moves (Relocate, Swap, CROSS, 2-Opt and 2-Opt*)
 	rechercheTerminee = false ;
 	double costBeforeRemoval, costAfterRemoval;
@@ -74,14 +54,14 @@ int LocalSearch::mutationSameDay (int day)
 		moveEffectue = 0 ;
 
 		// For every node U in random order
-		for ( int posU = 0 ; posU < (int)ordreParcours[day].size() ; posU ++ )
+		for ( int posU = 0 ; posU < (int)ordreParcours.size() ; posU ++ )
 		{
 			posU -= moveEffectue ; // We return on the last node if there has been a move
 			nbMoves += moveEffectue ;
 			moveEffectue = 0 ;
 			routeVideTestee = false ;
 
-			noeudU = &clients[day][ordreParcours[day][posU]];
+			noeudU = &clients[ordreParcours[posU]];
 			routeU = noeudU->route ;
 			vehicleU = routeU->vehicle ;
 			x = noeudU->suiv ;
@@ -96,7 +76,7 @@ int LocalSearch::mutationSameDay (int day)
 			size2 = (int)noeudU->moves.size();
 			for ( int posV = 0 ; posV < size2 && moveEffectue == 0 ; posV ++ )
 			{
-				noeudV = &clients[day][noeudU->moves[posV]] ;
+				noeudV = &clients[noeudU->moves[posV]] ;
 				routeV = noeudV->route ;
 				vehicleV = routeV->vehicle ;
 
@@ -162,7 +142,7 @@ int LocalSearch::mutationSameDay (int day)
 			// Special cases : testing the insertions behind the depot, and the empty routes
 			for (int route = 0 ; route < params->nbVehiculesPerDep && moveEffectue == 0 ; route ++)
 			{
-				noeudV = &depots[day][route] ;
+				noeudV = &depots[route] ;
 				routeV = noeudV->route ;
 				y = noeudV->suiv ;
 				if ( (!noeudV->route->nodeAndRouteTested[noeudU->cour]) && (!y->estUnDepot || !routeVideTestee))
@@ -171,7 +151,7 @@ int LocalSearch::mutationSameDay (int day)
 					if (routeV != routeU)
 					{
 						tempNoeud = noeudV ;
-						noeudV = depots[day][route].suiv ;
+						noeudV = depots[route].suiv ;
 						y = noeudV->suiv ;
 
 						// Insertion after the depot, in a different route
@@ -195,7 +175,7 @@ int LocalSearch::mutationSameDay (int day)
 					else
 					{
 						tempNoeud = noeudV ;
-						noeudV = depots[day][route].suiv ;
+						noeudV = depots[route].suiv ;
 						y = noeudV->suiv ;
 
 						// Insertion after the depot, in the same route
@@ -210,32 +190,8 @@ int LocalSearch::mutationSameDay (int day)
 
 			// Say that we have tested the node U with all routes
 			if (moveEffectue == 0)
-				nodeTestedForEachRoute(noeudU->cour,day);
+				nodeTestedForEachRoute(noeudU->cour);
 		}
-	}
-	return nbMoves ;
-}
-
-int LocalSearch::mutationDifferentDay ()
-{
-	// Local Search to improve the pattern choices for customers (PCARP and MDCARP)
-	// Only a single move, which is a relocate of all occurences of a customer in the best combination of days
-	// This move is still used for problems with a single period, in this case it only does a relocate without granular search restriction
-	rechercheTerminee = false ;
-	int nbMoves = 0 ;
-	firstLoop = true ;
-
-	for (int day = 1 ; day <= params->nbDays ; day++)
-		for (int r=0 ; r < params->nombreVehicules[day] ; r++)
-			routes[day][r].initiateInsertions() ;
-
-	while ( !rechercheTerminee )
-	{
-		rechercheTerminee = true ;
-		// Searching for a better insertion place for all customers
-		for ( int posU = 0 ; posU < params->nbClients ; posU ++ )
-			nbMoves += searchBetterPattern(ordreParcours[0][posU]);
-		firstLoop = false ;
 	}
 	return nbMoves ;
 }
@@ -443,8 +399,8 @@ int LocalSearch::interRouteGeneralInsert()
 
 	Noeud * placeV = noeudV->pred ;
 	Noeud * placeU = noeudU->pred ;
-	reinitSingleDayMoves(placeU->route); // Say that all moves involving this route must be tested again
-	reinitSingleDayMoves(placeV->route); // Say that all moves involving this route must be tested again
+	reinitMoves(placeU->route); // Say that all moves involving this route must be tested again
+	reinitMoves(placeV->route); // Say that all moves involving this route must be tested again
 
 	// Moving the nodes in the solution structure
 	if ( ibest == 1 || ibest == 2) insertNoeud(noeudU,placeV);
@@ -458,7 +414,7 @@ int LocalSearch::interRouteGeneralInsert()
 	// Update the pre-processed data on the subsequences of the route
 	placeU->route->updateRouteData(false);
 	placeV->route->updateRouteData(false);
-	setRouteVide(noeudU->jour); // Keep a pointer on the first empty route
+	setRouteVide(); // Keep a pointer on the first empty route
 
 	rechercheTerminee = false ; // Not finished the search
 	nbInterSwap ++ ;
@@ -488,8 +444,8 @@ int LocalSearch::interRoute2Opt ()
 
 	/* AN IMPROVING MOVE HAS BEEN DETECTED, IT IS DIRECTLY APPLIED */
 
-	reinitSingleDayMoves(routeU);  // Say that all moves involving this route must be tested again
-	reinitSingleDayMoves(routeV);  // Say that all moves involving this route must be tested again
+	reinitMoves(routeU);  // Say that all moves involving this route must be tested again
+	reinitMoves(routeV);  // Say that all moves involving this route must be tested again
 	Noeud * tempU = noeudU ;
 	noeudU = noeudU->pred ;
 	x = noeudU->suiv ;
@@ -539,7 +495,7 @@ int LocalSearch::interRoute2Opt ()
 	// Update the pre-processed data on the subsequences of the route
 	routeU->updateRouteData(false);
 	routeV->updateRouteData(false);
-	setRouteVide(noeudU->jour); // Keep a pointer on the first empty route
+	setRouteVide(); // Keep a pointer on the first empty route
 
 	rechercheTerminee = false ; // Not finished the search
 	nbInter2Opt ++ ;
@@ -592,8 +548,8 @@ int LocalSearch::interRoute2OptInv()
 
 	/* AN IMPROVING MOVE HAS BEEN DETECTED, IT IS DIRECTLY APPLIED */
 
-	reinitSingleDayMoves(noeudU->route);  // Say that all moves involving this route must be tested again
-	reinitSingleDayMoves(noeudV->route);  // Say that all moves involving this route must be tested again
+	reinitMoves(noeudU->route);  // Say that all moves involving this route must be tested again
+	reinitMoves(noeudV->route);  // Say that all moves involving this route must be tested again
 	Noeud * depotU = routeU->depot ;
 	Noeud * depotV = routeV->depot ;
 	Noeud * depotUFin = routeU->depot->pred ;
@@ -659,7 +615,7 @@ int LocalSearch::interRoute2OptInv()
 	// Update the pre-processed data on the subsequences of the route
 	routeU->updateRouteData(false);
 	routeV->updateRouteData(false);
-	setRouteVide(noeudU->jour); // Keep a pointer on the first empty route
+	setRouteVide(); // Keep a pointer on the first empty route
 
 	rechercheTerminee = false ; // Not finished the search
 	nbInter2Opt ++ ;
@@ -720,7 +676,7 @@ int LocalSearch::intraRouteGeneralInsertDroite ()
 			// The intra-route moves are the only moves which can involve general subsequences (i,j) in the middle of the route
 			// To reduce a bit the pre-processing, we keep only sequences of limited size (<= 15), even if this involves to concatenate more pieces
 			// The concatenation of the good number of pieces is done by "addSeqDataInPieces"
-			addSeqDataInPieces(noeudU,noeudV->place-1-noeudU->place,noeudU->jour);
+			addSeqDataInPieces(noeudU,noeudV->place-1-noeudU->place);
 			myseqs.push_back(y->seqi_n);
 			resultMoves[0][1] = seq->evaluationLB(myseqs,routeU->vehicle);
 			if (!y->estUnDepot) // exchange U and (V,Y or Y,V)
@@ -728,13 +684,13 @@ int LocalSearch::intraRouteGeneralInsertDroite ()
 				myseqs.clear();
 				myseqs.push_back(Upred->seq0_i);
 				myseqs.push_back(noeudV->seq12);
-				addSeqDataInPieces(noeudU,noeudV->place-1-noeudU->place,noeudU->jour);
+				addSeqDataInPieces(noeudU,noeudV->place-1-noeudU->place);
 				myseqs.push_back(ysuiv->seqi_n);
 				resultMoves[0][2] = seq->evaluationLB(myseqs,routeU->vehicle);
 				myseqs.clear();
 				myseqs.push_back(Upred->seq0_i);
 				myseqs.push_back(noeudV->seq21);
-				addSeqDataInPieces(noeudU,noeudV->place-1-noeudU->place,noeudU->jour);
+				addSeqDataInPieces(noeudU,noeudV->place-1-noeudU->place);
 				myseqs.push_back(ysuiv->seqi_n);
 				resultMoves[0][3] = seq->evaluationLB(myseqs,routeU->vehicle);
 			}
@@ -744,7 +700,7 @@ int LocalSearch::intraRouteGeneralInsertDroite ()
 		{
 			myseqs.clear();
 			myseqs.push_back(Upred->seq0_i);
-			addSeqDataInPieces(x,noeudV->place-1-x->place,noeudU->jour);
+			addSeqDataInPieces(x,noeudV->place-1-x->place);
 			myseqs.push_back(noeudU->seq1);
 			myseqs.push_back(noeudV->seqi_n);
 			resultMoves[1][0] = seq->evaluationLB(myseqs,routeU->vehicle);
@@ -754,7 +710,7 @@ int LocalSearch::intraRouteGeneralInsertDroite ()
 			myseqs.clear();
 			myseqs.push_back(Upred->seq0_i);
 			myseqs.push_back(noeudV->seq1);
-			addSeqDataInPieces(x,noeudV->place-1-x->place,noeudU->jour);
+			addSeqDataInPieces(x,noeudV->place-1-x->place);
 			myseqs.push_back(noeudU->seq1);
 			myseqs.push_back(y->seqi_n);
 			resultMoves[1][1] = seq->evaluationLB(myseqs,routeU->vehicle);
@@ -763,7 +719,7 @@ int LocalSearch::intraRouteGeneralInsertDroite ()
 				myseqs.clear();
 				myseqs.push_back(Upred->seq0_i);
 				myseqs.push_back(noeudV->seq12);
-				addSeqDataInPieces(x,noeudV->place-1-x->place,noeudU->jour);
+				addSeqDataInPieces(x,noeudV->place-1-x->place);
 				myseqs.push_back(noeudU->seq1);
 				myseqs.push_back(ysuiv->seqi_n);
 				resultMoves[1][2] = seq->evaluationLB(myseqs,routeU->vehicle);
@@ -771,7 +727,7 @@ int LocalSearch::intraRouteGeneralInsertDroite ()
 				myseqs.clear();
 				myseqs.push_back(Upred->seq0_i);
 				myseqs.push_back(noeudV->seq21);
-				addSeqDataInPieces(x,noeudV->place-1-x->place,noeudU->jour);
+				addSeqDataInPieces(x,noeudV->place-1-x->place);
 				myseqs.push_back(noeudU->seq1);
 				myseqs.push_back(ysuiv->seqi_n);
 				resultMoves[1][3] = seq->evaluationLB(myseqs,routeU->vehicle);
@@ -784,7 +740,7 @@ int LocalSearch::intraRouteGeneralInsertDroite ()
 			{
 				myseqs.clear();
 				myseqs.push_back(Upred->seq0_i);
-				addSeqDataInPieces(xsuiv,noeudV->place-1-xsuiv->place,noeudU->jour);
+				addSeqDataInPieces(xsuiv,noeudV->place-1-xsuiv->place);
 				myseqs.push_back(noeudU->seq12);
 				myseqs.push_back(noeudV->seqi_n);
 				resultMoves[2][0] = seq->evaluationLB(myseqs,routeU->vehicle);
@@ -797,7 +753,7 @@ int LocalSearch::intraRouteGeneralInsertDroite ()
 					myseqs.clear();
 					myseqs.push_back(Upred->seq0_i);
 					myseqs.push_back(noeudV->seq1);
-					addSeqDataInPieces(xsuiv,noeudV->place-1-xsuiv->place,noeudU->jour);
+					addSeqDataInPieces(xsuiv,noeudV->place-1-xsuiv->place);
 					myseqs.push_back(noeudU->seq12);
 					myseqs.push_back(y->seqi_n);
 					resultMoves[2][1] = seq->evaluationLB(myseqs,routeU->vehicle);
@@ -807,7 +763,7 @@ int LocalSearch::intraRouteGeneralInsertDroite ()
 					myseqs.clear();
 					myseqs.push_back(Upred->seq0_i);
 					myseqs.push_back(noeudV->seq12);
-					addSeqDataInPieces(xsuiv,noeudV->place-1-xsuiv->place,noeudU->jour);
+					addSeqDataInPieces(xsuiv,noeudV->place-1-xsuiv->place);
 					myseqs.push_back(noeudU->seq12);
 					myseqs.push_back(ysuiv->seqi_n);
 					resultMoves[2][2] = seq->evaluationLB(myseqs,routeU->vehicle);
@@ -815,7 +771,7 @@ int LocalSearch::intraRouteGeneralInsertDroite ()
 					myseqs.clear();
 					myseqs.push_back(Upred->seq0_i);
 					myseqs.push_back(noeudV->seq21);
-					addSeqDataInPieces(xsuiv,noeudV->place-1-xsuiv->place,noeudU->jour);
+					addSeqDataInPieces(xsuiv,noeudV->place-1-xsuiv->place);
 					myseqs.push_back(noeudU->seq12);
 					myseqs.push_back(ysuiv->seqi_n);
 					resultMoves[2][3] = seq->evaluationLB(myseqs,routeU->vehicle);
@@ -826,7 +782,7 @@ int LocalSearch::intraRouteGeneralInsertDroite ()
 			{
 				myseqs.clear();
 				myseqs.push_back(Upred->seq0_i);
-				addSeqDataInPieces(xsuiv,noeudV->place-1-xsuiv->place,noeudU->jour);
+				addSeqDataInPieces(xsuiv,noeudV->place-1-xsuiv->place);
 				myseqs.push_back(noeudU->seq21);
 				myseqs.push_back(noeudV->seqi_n);
 				resultMoves[3][0] = seq->evaluationLB(myseqs,routeU->vehicle);
@@ -838,7 +794,7 @@ int LocalSearch::intraRouteGeneralInsertDroite ()
 					myseqs.clear();
 					myseqs.push_back(Upred->seq0_i);
 					myseqs.push_back(noeudV->seq1);
-					addSeqDataInPieces(xsuiv,noeudV->place-1-xsuiv->place,noeudU->jour);
+					addSeqDataInPieces(xsuiv,noeudV->place-1-xsuiv->place);
 					myseqs.push_back(noeudU->seq21);
 					myseqs.push_back(y->seqi_n);
 					resultMoves[3][1] = seq->evaluationLB(myseqs,routeU->vehicle);
@@ -848,7 +804,7 @@ int LocalSearch::intraRouteGeneralInsertDroite ()
 					myseqs.clear();
 					myseqs.push_back(Upred->seq0_i);
 					myseqs.push_back(noeudV->seq12);
-					addSeqDataInPieces(xsuiv,noeudV->place-1-xsuiv->place,noeudU->jour);
+					addSeqDataInPieces(xsuiv,noeudV->place-1-xsuiv->place);
 					myseqs.push_back(noeudU->seq21);
 					myseqs.push_back(ysuiv->seqi_n);
 					resultMoves[3][2] = seq->evaluationLB(myseqs,routeU->vehicle);
@@ -856,7 +812,7 @@ int LocalSearch::intraRouteGeneralInsertDroite ()
 					myseqs.clear();
 					myseqs.push_back(Upred->seq0_i);
 					myseqs.push_back(noeudV->seq21);
-					addSeqDataInPieces(xsuiv,noeudV->place-1-xsuiv->place,noeudU->jour);
+					addSeqDataInPieces(xsuiv,noeudV->place-1-xsuiv->place);
 					myseqs.push_back(noeudU->seq21);
 					myseqs.push_back(ysuiv->seqi_n);
 					resultMoves[3][3] = seq->evaluationLB(myseqs,routeU->vehicle);
@@ -915,7 +871,7 @@ int LocalSearch::intraRouteGeneralInsertDroite ()
 				myseqs.clear();
 				myseqs.push_back(Upred->seq0_i);
 				myseqs.push_back(noeudV->seq1);
-				addSeqDataInPieces(noeudU,noeudV->place-1-noeudU->place,noeudU->jour);
+				addSeqDataInPieces(noeudU,noeudV->place-1-noeudU->place);
 				myseqs.push_back(y->seqi_n);
 				resultMoves[0][1] = seq->evaluation(myseqs,routeU->vehicle);
 			}
@@ -927,7 +883,7 @@ int LocalSearch::intraRouteGeneralInsertDroite ()
 					myseqs.clear();
 					myseqs.push_back(Upred->seq0_i);
 					myseqs.push_back(noeudV->seq12);
-					addSeqDataInPieces(noeudU,noeudV->place-1-noeudU->place,noeudU->jour);
+					addSeqDataInPieces(noeudU,noeudV->place-1-noeudU->place);
 					myseqs.push_back(ysuiv->seqi_n);
 					resultMoves[0][2] = seq->evaluation(myseqs,routeU->vehicle);
 				}
@@ -937,7 +893,7 @@ int LocalSearch::intraRouteGeneralInsertDroite ()
 					myseqs.clear();
 					myseqs.push_back(Upred->seq0_i);
 					myseqs.push_back(noeudV->seq21);
-					addSeqDataInPieces(noeudU,noeudV->place-1-noeudU->place,noeudU->jour);
+					addSeqDataInPieces(noeudU,noeudV->place-1-noeudU->place);
 					myseqs.push_back(ysuiv->seqi_n);
 					resultMoves[0][3] = seq->evaluation(myseqs,routeU->vehicle);
 				}
@@ -948,7 +904,7 @@ int LocalSearch::intraRouteGeneralInsertDroite ()
 		{
 			myseqs.clear();
 			myseqs.push_back(Upred->seq0_i);
-			addSeqDataInPieces(x,noeudV->place-1-x->place,noeudU->jour);
+			addSeqDataInPieces(x,noeudV->place-1-x->place);
 			myseqs.push_back(noeudU->seq1);
 			myseqs.push_back(noeudV->seqi_n);
 			resultMoves[1][0] = seq->evaluation(myseqs,routeU->vehicle);
@@ -960,7 +916,7 @@ int LocalSearch::intraRouteGeneralInsertDroite ()
 				myseqs.clear();
 				myseqs.push_back(Upred->seq0_i);
 				myseqs.push_back(noeudV->seq1);
-				addSeqDataInPieces(x,noeudV->place-1-x->place,noeudU->jour);
+				addSeqDataInPieces(x,noeudV->place-1-x->place);
 				myseqs.push_back(noeudU->seq1);
 				myseqs.push_back(y->seqi_n);
 				resultMoves[1][1] = seq->evaluation(myseqs,routeU->vehicle);
@@ -973,7 +929,7 @@ int LocalSearch::intraRouteGeneralInsertDroite ()
 					myseqs.clear();
 					myseqs.push_back(Upred->seq0_i);
 					myseqs.push_back(noeudV->seq12);
-					addSeqDataInPieces(x,noeudV->place-1-x->place,noeudU->jour);
+					addSeqDataInPieces(x,noeudV->place-1-x->place);
 					myseqs.push_back(noeudU->seq1);
 					myseqs.push_back(ysuiv->seqi_n);
 					resultMoves[1][2] = seq->evaluation(myseqs,routeU->vehicle);
@@ -984,7 +940,7 @@ int LocalSearch::intraRouteGeneralInsertDroite ()
 					myseqs.clear();
 					myseqs.push_back(Upred->seq0_i);
 					myseqs.push_back(noeudV->seq21);
-					addSeqDataInPieces(x,noeudV->place-1-x->place,noeudU->jour);
+					addSeqDataInPieces(x,noeudV->place-1-x->place);
 					myseqs.push_back(noeudU->seq1);
 					myseqs.push_back(ysuiv->seqi_n);
 					resultMoves[1][3] = seq->evaluation(myseqs,routeU->vehicle);
@@ -998,7 +954,7 @@ int LocalSearch::intraRouteGeneralInsertDroite ()
 			{
 				myseqs.clear();
 				myseqs.push_back(Upred->seq0_i);
-				addSeqDataInPieces(xsuiv,noeudV->place-1-xsuiv->place,noeudU->jour);
+				addSeqDataInPieces(xsuiv,noeudV->place-1-xsuiv->place);
 				myseqs.push_back(noeudU->seq12);
 				myseqs.push_back(noeudV->seqi_n);
 				resultMoves[2][0] = seq->evaluation(myseqs,routeU->vehicle);
@@ -1011,7 +967,7 @@ int LocalSearch::intraRouteGeneralInsertDroite ()
 					myseqs.clear();
 					myseqs.push_back(Upred->seq0_i);
 					myseqs.push_back(noeudV->seq1);
-					addSeqDataInPieces(xsuiv,noeudV->place-1-xsuiv->place,noeudU->jour);
+					addSeqDataInPieces(xsuiv,noeudV->place-1-xsuiv->place);
 					myseqs.push_back(noeudU->seq12);
 					myseqs.push_back(y->seqi_n);
 					resultMoves[2][1] = seq->evaluation(myseqs,routeU->vehicle);
@@ -1023,7 +979,7 @@ int LocalSearch::intraRouteGeneralInsertDroite ()
 						myseqs.clear();
 						myseqs.push_back(Upred->seq0_i);
 						myseqs.push_back(noeudV->seq12);
-						addSeqDataInPieces(xsuiv,noeudV->place-1-xsuiv->place,noeudU->jour);
+						addSeqDataInPieces(xsuiv,noeudV->place-1-xsuiv->place);
 						myseqs.push_back(noeudU->seq12);
 						myseqs.push_back(ysuiv->seqi_n);
 						resultMoves[2][2] = seq->evaluation(myseqs,routeU->vehicle);
@@ -1034,7 +990,7 @@ int LocalSearch::intraRouteGeneralInsertDroite ()
 						myseqs.clear();
 						myseqs.push_back(Upred->seq0_i);
 						myseqs.push_back(noeudV->seq21);
-						addSeqDataInPieces(xsuiv,noeudV->place-1-xsuiv->place,noeudU->jour);
+						addSeqDataInPieces(xsuiv,noeudV->place-1-xsuiv->place);
 						myseqs.push_back(noeudU->seq12);
 						myseqs.push_back(ysuiv->seqi_n);
 						resultMoves[2][3] = seq->evaluation(myseqs,routeU->vehicle);
@@ -1046,7 +1002,7 @@ int LocalSearch::intraRouteGeneralInsertDroite ()
 			{
 				myseqs.clear();
 				myseqs.push_back(Upred->seq0_i);
-				addSeqDataInPieces(xsuiv,noeudV->place-1-xsuiv->place,noeudU->jour);
+				addSeqDataInPieces(xsuiv,noeudV->place-1-xsuiv->place);
 				myseqs.push_back(noeudU->seq21);
 				myseqs.push_back(noeudV->seqi_n);
 				resultMoves[3][0] = seq->evaluation(myseqs,routeU->vehicle);
@@ -1058,7 +1014,7 @@ int LocalSearch::intraRouteGeneralInsertDroite ()
 					myseqs.clear();
 					myseqs.push_back(Upred->seq0_i);
 					myseqs.push_back(noeudV->seq1);
-					addSeqDataInPieces(xsuiv,noeudV->place-1-xsuiv->place,noeudU->jour);
+					addSeqDataInPieces(xsuiv,noeudV->place-1-xsuiv->place);
 					myseqs.push_back(noeudU->seq21);
 					myseqs.push_back(y->seqi_n);
 					resultMoves[3][1] = seq->evaluation(myseqs,routeU->vehicle);
@@ -1070,7 +1026,7 @@ int LocalSearch::intraRouteGeneralInsertDroite ()
 						myseqs.clear();
 						myseqs.push_back(Upred->seq0_i);
 						myseqs.push_back(noeudV->seq12);
-						addSeqDataInPieces(xsuiv,noeudV->place-1-xsuiv->place,noeudU->jour);
+						addSeqDataInPieces(xsuiv,noeudV->place-1-xsuiv->place);
 						myseqs.push_back(noeudU->seq21);
 						myseqs.push_back(ysuiv->seqi_n);
 						resultMoves[3][2] = seq->evaluation(myseqs,routeU->vehicle);
@@ -1081,7 +1037,7 @@ int LocalSearch::intraRouteGeneralInsertDroite ()
 						myseqs.clear();
 						myseqs.push_back(Upred->seq0_i);
 						myseqs.push_back(noeudV->seq21);
-						addSeqDataInPieces(xsuiv,noeudV->place-1-xsuiv->place,noeudU->jour);
+						addSeqDataInPieces(xsuiv,noeudV->place-1-xsuiv->place);
 						myseqs.push_back(noeudU->seq21);
 						myseqs.push_back(ysuiv->seqi_n);
 						resultMoves[3][3] = seq->evaluation(myseqs,routeU->vehicle);
@@ -1146,7 +1102,7 @@ int LocalSearch::intraRouteGeneralInsertDroite ()
 	// HERE STARTS THE MOVE APPLICATION PROCESS
 	///////////////////////////////////////////
 
-	reinitSingleDayMoves(routeU);  // Say that all moves involving this route must be tested again
+	reinitMoves(routeU);  // Say that all moves involving this route must be tested again
 
 	// Update the solution
 	if (decalage >= 3)
@@ -1174,7 +1130,7 @@ int LocalSearch::intraRouteGeneralInsertDroite ()
 	} 
 
 	routeU->updateRouteData(false); // Update the pre-processed data on the subsequences of the route
-	setRouteVide(noeudU->jour); // Keep a pointer on the first empty route
+	setRouteVide(); // Keep a pointer on the first empty route
 	rechercheTerminee = false ; // Not finished the search
 	nbIntraSwap ++ ;
 	noeudU = tempU ;
@@ -1198,7 +1154,7 @@ int LocalSearch::intraRoute2Opt ()
 
 	myseqs.clear();
 	myseqs.push_back(noeudU->pred->seq0_i);
-	addReverseSeqDataInPieces(noeudU,noeudV->place-noeudU->place,noeudU->jour);
+	addReverseSeqDataInPieces(noeudU,noeudV->place-noeudU->place);
 	myseqs.push_back(noeudV->suiv->seqi_n);
 
 	// Compute the lower bound on move value and exits if no possible improvement
@@ -1212,7 +1168,7 @@ int LocalSearch::intraRoute2Opt ()
 		return 0 ;
 
 	// Apply the move and update the solution
-	reinitSingleDayMoves(routeU);
+	reinitMoves(routeU);
 	noeudU->pred = nodeNum ;
 	noeudU->suiv = y ;
 
@@ -1229,335 +1185,56 @@ int LocalSearch::intraRoute2Opt ()
 	nodeUpred->suiv = noeudV ;
 	y->pred = noeudU ;
 	routeU->updateRouteData(false);  // Update the pre-processed data on the subsequences of the route
-	setRouteVide(noeudU->jour); // Keep a pointer on the first empty route
+	setRouteVide(); // Keep a pointer on the first empty route
 	rechercheTerminee = false ; // Not finished the search
 	nbIntra2Opt ++ ;
 	return 1 ; // Return Success
-}
-
-int LocalSearch::searchBetterPattern (int client)
-{
-	pattern pattern1 = individu->chromP[client] ;
-	pattern pattern2, meilleurPattern ;
-	int indexMeilleur = -1 ;
-	meilleurPattern.pat = -1000000 ;
-	int temp, calcul, depot ;
-	double depense = 0 ;
-	double meilleureDepense = 1.e30 ;
-	Noeud * noeudTravail ;
-	deplacementIntraJour = false ; 	// this flag is only raised in case there is a better insertion in the same day
-
-	for (int pat = 0 ; pat < (int)params->cli[client].visits.size() ; pat ++)
-	{
-		// testing a new pattern
-		pattern2 = params->cli[client].visits[pat] ;
-		testingIncumbentPattern = (individu->chromP[client].pat == pattern2.pat && individu->chromP[client].dep == pattern2.dep) ;
-		calcul = pattern2.pat ;
-		depot = pattern2.dep ;
-		depense = pattern2.cost ;
-		for (int k = 0 ; k < params->ancienNbDays ; k++)
-		{
-			temp = calcul % 2 ;
-			calcul = calcul/2 ;
-			if (temp == 1)
-			{
-				noeudTravail = &clients[params->ancienNbDays-k + depot*params->ancienNbDays][client] ;
-				// If the insertion in this day has not been computed yet 
-				// (Note that it would be possible to do way faster by considering the fact that only the demand of 
-				// a single delivery changes... and sometimes its even the same for different patterns)
-				// Still, this is a simplistic implementation for the tests PCARP, no need for the highest performance
-				if (noeudTravail->coutInsertion[pat] > 1.e29 || firstLoop)
-					computeCoutInsertion(noeudTravail,pat) ;
-				depense += noeudTravail->coutInsertion[pat] ;
-			}
-		}
-
-		if (depense < meilleureDepense - EPSILON_LS
-			|| (depense < meilleureDepense + EPSILON_LS && pattern2.dep == pattern1.dep && pattern2.pat == pattern1.pat) )
-		{
-			meilleureDepense = depense ;
-			meilleurPattern = pattern2 ;
-			indexMeilleur = pat ;
-		}
-	}
-
-	if (meilleurPattern.pat == -1000000) 
-		throw string ("ERROR when computing the best pattern !") ;
-
-	// Applying the move if a better pattern has been found
-	if ( meilleurPattern.pat != pattern1.pat || meilleurPattern.dep != pattern1.dep || deplacementIntraJour)
-	{
-		// removing the current occurences of this customer
-		calcul = pattern1.pat ;
-		for (int k = 0 ; k < params->ancienNbDays ; k++)
-		{
-			temp = calcul % 2 ;
-			calcul = calcul/2 ;
-			if (temp == 1)
-				removeNoeud(&clients[params->ancienNbDays-k+ pattern1.dep*params->ancienNbDays][client]);
-		}
-
-		// (PCARP) Updating the chromP (necessary to do now, not later, otherwise the wrong data is set to pre-process the SeqData)
-		// When adding the nodes in the next block of instructions
-		individu->chromP[client] = meilleurPattern ;
-
-		// Inserting in the new locations
-		calcul = meilleurPattern.pat ;
-		depot = meilleurPattern.dep ;
-		for (int k = 0 ; k < params->ancienNbDays ; k++)
-		{
-			temp = calcul % 2 ;
-			calcul = calcul/2 ;
-			if (temp == 1)
-			{
-				Noeud * hereCli = &clients[params->ancienNbDays-k+ meilleurPattern.dep*params->ancienNbDays][client] ;
-				Noeud * thereCli = hereCli->placeInsertion[indexMeilleur] ;
-				addNoeud(hereCli,thereCli);
-			}	
-		}
-		//cout << "Inserting Node " << client << " With pattern " << meilleurPattern.pat << " Flag is : " << deplacementIntraJour << endl ;
-
-		rechercheTerminee = false ;
-		return 1 ;
-	}
-	else return 0 ;
-}
-
-void LocalSearch::computeCoutInsertion(Noeud * client, int pattern) 
-{
-	// Computing the best cost for inserting a client in its day
-	Route * myRoute ;
-	client->coutInsertion[pattern] = 1.e30 ;
-	client->placeInsertion[pattern] = NULL ;
-
-	noeudU = client ;
-	x = noeudU->suiv ;
-	routeU = noeudU->route ;
-
-	// Find the best insertion for each route
-	for (int r=0 ; r < params->nombreVehicules[client->jour] ; r++)
-	{
-		myRoute = &routes[client->jour][r] ;
-		if ( myRoute->coutInsertionClient[client->cour][pattern] > 1.e29 || firstLoop ) 
-			evalInsertClient(myRoute,client,pattern) ;
-
-		if ( myRoute->coutInsertionClient[client->cour][pattern] < client->coutInsertion[pattern] - EPSILON_LS)
-		{
-			client->coutInsertion[pattern] = myRoute->coutInsertionClient[client->cour][pattern] ;
-			client->placeInsertion[pattern] = myRoute->placeInsertionClient[client->cour][pattern] ;
-		}
-	}
-
-	// If its possible to improve the placement of a customer in a day where its already placed, and according to its current pattern, then we raise this flag
-	if (client->estPresent // its placed here
-		&& testingIncumbentPattern // with the same pattern
-		&& client->route->coutInsertionClient[client->cour][pattern] > client->coutInsertion[pattern] + EPSILON_LS) // but we can do better
-		deplacementIntraJour = true ;
-}
-
-void LocalSearch::evalInsertClient (Route * R,Noeud * U,int pattern) 
-{
-	// Computing the least cost for inserting a client U in a route R
-	SeqData * seq = U->seq0_i ;
-	Noeud * courNoeud ;
-	double leastCost = 1.e30 ;
-	double cost ;
-	bool firstLoopDep = true ;
-
-	// Tweaking the code to work with the PCARP
-	// We need to account for the fact that the demand may change based on the pattern choice
-	// Here doing something a bit ugly, which is to store and modify from outside the pre-processed Seqdata "U->seq1"
-	// to include the good delivery quantity
-	double tempDemand = U->seq1->load ;
-	U->seq1->load = params->cli[U->cour].demandPatDay[params->cli[U->cour].visits[pattern].pat][U->jour];
-
-	// Some memory structures to avoid recomputing these things again and again
-	R->coutInsertionClient[U->cour][pattern] = 1.e30 ;
-	R->placeInsertionClient[U->cour][pattern] = NULL ;
-
-	if (!(U->route == R) || !U->estPresent)
-	{
-		// Case 1 : U is not in the route
-		courNoeud = R->depot->suiv ;
-		while (!courNoeud->estUnDepot || firstLoopDep)
-		{
-			if (courNoeud->estUnDepot) firstLoopDep = false ;
-			cost = seq->evaluation(courNoeud->pred->seq0_i,U->seq1,courNoeud->seqi_n,R->vehicle);
-			if ( cost < leastCost )
-			{
-				leastCost = cost ;
-				R->placeInsertionClient[U->cour][pattern] = courNoeud->pred ;
-			}
-			courNoeud = courNoeud->suiv ;
-		}
-		R->coutInsertionClient[U->cour][pattern] = leastCost - seq->evaluation(R->depot->pred->seq0_i,R->vehicle);
-	}
-	else
-	{
-		// Case 2 : U is already in the route R
-		leastCost = seq->evaluation(U->pred->seq0_i,U->seq1,U->suiv->seqi_n,R->vehicle);
-		R->placeInsertionClient[U->cour][pattern] = U->pred ;
-		courNoeud = R->depot->suiv ;
-		while (!courNoeud->estUnDepot || firstLoopDep)
-		{
-			if (courNoeud->estUnDepot) firstLoopDep = false ;
-
-			if (courNoeud->place < U->place)
-			{
-				myseqs.clear();
-				myseqs.push_back(courNoeud->pred->seq0_i);
-				myseqs.push_back(U->seq1);
-				addSeqDataInPieces(courNoeud,U->place-1-courNoeud->place,courNoeud->jour);
-				myseqs.push_back(U->suiv->seqi_n);
-				cost = seq->evaluation(myseqs,R->vehicle);
-			}
-			else if (courNoeud->place > U->place + 1)
-			{
-				myseqs.clear();
-				myseqs.push_back(U->pred->seq0_i);
-				addSeqDataInPieces(U->suiv,courNoeud->place-1-U->suiv->place,courNoeud->jour);
-				myseqs.push_back(U->seq1);
-				myseqs.push_back(courNoeud->seqi_n);
-				cost = seq->evaluation(myseqs,R->vehicle);
-			}
-			else cost = 1.e30 ;
-
-			if ( cost < leastCost - EPSILON_LS )
-			{
-				leastCost = cost ;
-				R->placeInsertionClient[U->cour][pattern] = courNoeud->pred ;
-			}
-			courNoeud = courNoeud->suiv ;
-		}
-		R->coutInsertionClient[U->cour][pattern] = leastCost - seq->evaluation(U->pred->seq0_i,U->suiv->seqi_n,R->vehicle);
-	}
-
-	// PCARP, setting back the pre-processed demand to its correct value
-	U->seq1->load = tempDemand ;
 }
 
 void LocalSearch::melangeParcours ()
 {
 	// Shuffling the ordreParcours vector
 	int j,temp ;
-	for (int k = 0 ; k <= params->nbDays ; k++)
-	{
-		for (int i = 0 ; i < (int)ordreParcours[k].size() - 1 ; i++)
-		{
-			j = i + rand() % ((int)ordreParcours[k].size() - i) ;
-			temp = ordreParcours[k][i] ;
-			ordreParcours[k][i] = ordreParcours[k][j] ;
-			ordreParcours[k][j] = temp ;
-		}
-	}
+  for (int i = 0 ; i < (int)ordreParcours.size() - 1 ; i++)
+  {
+    j = i + rand() % ((int)ordreParcours.size() - i) ;
+    temp = ordreParcours[i] ;
+    ordreParcours[i] = ordreParcours[j] ;
+    ordreParcours[j] = temp ;
+  }
 }
 
 void LocalSearch::updateMoves ()
 {
 	int client, client2, size ;
-	for (int k=1 ; k<=params->nbDays ; k++)
-	{
-		for (int i=0 ; i<( int)ordreParcours[k].size() ; i++)
-		{
-			client = ordreParcours[k][i] ;
-			clients[k][client].moves.clear();
-			size = (int)params->cli[client].sommetsVoisinsAvant.size();
-			for (int a1 = 0 ; a1 < size ; a1++ )
-			{
-				client2 = params->cli[client].sommetsVoisinsAvant[a1] ;
-				if (client2 >= params->nbDepots && clients[k][client2].estPresent) clients[k][client].moves.push_back(client2);
-			}
-		}
-	}
+  for (int i=0 ; i<( int)ordreParcours.size() ; i++)
+  {
+    client = ordreParcours[i] ;
+    clients[client].moves.clear();
+    size = (int)params->cli[client].sommetsVoisinsAvant.size();
+    for (int a1 = 0 ; a1 < size ; a1++ )
+    {
+      client2 = params->cli[client].sommetsVoisinsAvant[a1] ;
+      if (client2 >= params->nbDepots && clients[client2].estPresent) clients[client].moves.push_back(client2);
+    }
+  }
 }
 
-void LocalSearch::setRouteVide(int day)
+void LocalSearch::setRouteVide()
 {
-	routeVide[day] = NULL ;
+	routeVide = NULL ;
 	int route = 0 ;
-	while (routeVide[day] == NULL && route < params->nbVehiculesPerDep )
+	while (routeVide == NULL && route < params->nbVehiculesPerDep )
 	{
-		if (depots[day][route].suiv->estUnDepot) routeVide[day] = depots[day][route].route ;
+		if (depots[route].suiv->estUnDepot) routeVide = depots[route].route ;
 		route ++ ;
 	}
 }
 
-void LocalSearch::nodeTestedForEachRoute (int cli, int day)
+void LocalSearch::nodeTestedForEachRoute (int cli)
 {
-	for (int route = 0 ; route < (int)params->nombreVehicules[day] ; route ++)
-		routes[day][route].nodeAndRouteTested[cli]=true ;	
-}
-
-void LocalSearch::placeManquants ()
-{
-	// Insertion procedure for the crossover PIX
-	int k ;
-	pattern meilleurPattern ;
-	double depense, meilleureDepense ;
-	int indexMeilleur = -1;
-	Noeud * noeudTravail ;
-	int calcul1, calcul2 ;
-	pattern pattern1, pattern2 ;
-
-	firstLoop = true ;
-
-	for (int day = 1 ; day <= params->nbDays ; day++)
-		for (int r=0 ; r < params->nombreVehicules[day] ; r++)
-			routes[day][r].initiateInsertions() ;
-
-	// We iterate on missing visits
-	for (int i=0 ; i < (int)individu->toPlace.size() ; i++ )
-	{
-		meilleureDepense = 1.e30 ;
-		k = individu->toPlace[i] ;
-		pattern1 = individu->chromP[k] ;
-
-		for (int pat = 0 ; pat < (int)params->cli[k].visits.size() ; pat ++)
-		{
-			// testing a new pattern
-			pattern2 = params->cli[k].visits[pat] ;
-			if (pattern::isSubset(pattern1,pattern2))
-			{
-				calcul2 = pattern2.pat ;
-				depense = pattern2.cost ;
-				for (int kk = 0 ; kk < params->ancienNbDays ; kk++)
-				{
-					if (calcul2 % 2 == 1)
-					{
-						noeudTravail = &clients[params->ancienNbDays-kk + pattern2.dep*params->ancienNbDays][k] ;
-						computeCoutInsertion(noeudTravail,pat) ;
-						depense += noeudTravail->coutInsertion[pat] ;
-					}
-					calcul2 = calcul2/2 ;
-				}
-
-				if (depense < meilleureDepense)
-				{
-					meilleureDepense = depense ;
-					meilleurPattern = pattern2 ;
-					indexMeilleur = pat ;
-				}
-			}
-		}
-
-		// Updating the chromP with the chosen pattern
-		individu->chromP[k] = meilleurPattern ;
-
-		// Inserting in the new locations
-		calcul1 = pattern1.pat ;
-		calcul2 = meilleurPattern.pat ;
-		for (int kk = 0 ; kk < params->ancienNbDays ; kk++)
-		{
-			if (calcul2 % 2 == 1 && calcul1 % 2 == 0)
-			{
-				Noeud * hereCli = &clients[params->ancienNbDays-kk+ meilleurPattern.dep*params->ancienNbDays][k] ;
-				Noeud * thereCli = hereCli->placeInsertion[indexMeilleur] ;
-				addNoeud(hereCli,thereCli);
-			}
-			calcul1 = calcul1/2 ;
-			calcul2 = calcul2/2 ;
-		}
-	}
+	for (int route = 0 ; route < (int)params->nombreVehicules ; route ++)
+		routes[route].nodeAndRouteTested[cli]=true ;	
 }
 
 void LocalSearch::insertNoeud(Noeud * U, Noeud * V)
@@ -1577,30 +1254,24 @@ void LocalSearch::insertNoeud(Noeud * U, Noeud * V)
 void LocalSearch::removeNoeud(Noeud * U)
 {
 	Noeud * temp =  U->suiv ;
-	reinitSingleDayMoves(U->route);
+	reinitMoves(U->route);
 	U->pred->suiv = U->suiv ;
 	U->suiv->pred = U->pred ;
 	U->route = NULL ;
 	U->pred = NULL ;
 	U->suiv = NULL ;
 	temp->route->updateRouteData(false);
-	setRouteVide(U->jour);
+	setRouteVide();
 
 	// Managing the other data structures
-	individu->chromT[U->jour].pop_back();
-	removeOP(U->jour,U->cour);
+	individu->chromT.pop_back();
+	removeOP(U->cour);
 	U->estPresent = false ;
-
-	// Say that the insertions on this day need to be computed again
-	temp->route->initiateInsertions();
-	for (int i= params->nbDepots ; i< params->nbDepots + params->nbClients ; i++)
-		for (int p=0 ; p < (int)params->cli[i].visits.size() ; p++)
-			clients[U->jour][i].coutInsertion[p] = 1.e30 ;
 }
 
 void LocalSearch::addNoeud(Noeud * U, Noeud * V)
 {
-	reinitSingleDayMoves(V->route);
+	reinitMoves(V->route);
 	V->suiv->pred = U ;
 	U->pred = V;
 	U->suiv = V->suiv ;
@@ -1610,62 +1281,55 @@ void LocalSearch::addNoeud(Noeud * U, Noeud * V)
 	U->estPresent = true ;
 	U->route = V->route ;
 	U->route->updateRouteData(false);
-	setRouteVide(U->jour);
+	setRouteVide();
 
 	// Manage the other data structures
-	individu->chromT[U->jour].push_back(0);
-	addOP(U->jour,U->cour);
-
-	// Say that the insertions on this day need to be computed again
-	U->route->initiateInsertions();
-	for (int i= params->nbDepots ; i< params->nbDepots + params->nbClients ; i++)
-		for (int p=0 ; p < (int)params->cli[i].visits.size() ; p++)
-			clients[U->jour][i].coutInsertion[p] = 1.e30 ;
+	individu->chromT.push_back(0);
+	addOP(U->cour);
 }
 
-void LocalSearch::removeOP (int day, int client) 
+void LocalSearch::removeOP (int client) 
 {
 	// Remove one occurence in the ordreParcours structure
 	int it = 0  ;
-	while (ordreParcours[day][it] != client) { it ++ ; }
-	ordreParcours[day][it] = ordreParcours[day][(int)ordreParcours[day].size() - 1];
-	ordreParcours[day].pop_back();
+	while (ordreParcours[it] != client) { it ++ ; }
+	ordreParcours[it] = ordreParcours[(int)ordreParcours.size() - 1];
+	ordreParcours.pop_back();
 }
 
-void LocalSearch::addOP (int day, int client) 
+void LocalSearch::addOP (int client) 
 {
 	// Add one element in the ordreParcours structure
 	int it, temp2 ;
-	if (ordreParcours[day].size() != 0)
+	if (ordreParcours.size() != 0)
 	{
-		it = (int)rand() % ordreParcours[day].size() ;
-		temp2 = ordreParcours[day][it] ;
-		ordreParcours[day][it] = client ;
-		ordreParcours[day].push_back(temp2);
+		it = (int)rand() % ordreParcours.size() ;
+		temp2 = ordreParcours[it] ;
+		ordreParcours[it] = client ;
+		ordreParcours.push_back(temp2);
 	}
 	else
-		ordreParcours[day].push_back(client);
+		ordreParcours.push_back(client);
 }
 
-void LocalSearch::reinitSingleDayMoves(Route * r)
+void LocalSearch::reinitMoves(Route * r)
 {
 	for (int i=0 ; i < params->nbClients + params->nbDepots ; i ++ )
 		r->nodeAndRouteTested[i] = false ;
 
 	for (Noeud * tempNoeud = r->depot->suiv ; !tempNoeud->estUnDepot ; tempNoeud = tempNoeud->suiv)
 		for (int route = 0 ; route < params->nbVehiculesPerDep ; route ++)
-			depots[tempNoeud->jour][route].route->nodeAndRouteTested[tempNoeud->cour] = false ;
+			depots[route].route->nodeAndRouteTested[tempNoeud->cour] = false ;
 }
 
-void LocalSearch::reinitAllSingleDayMoves()
+void LocalSearch::reinitAllMoves()
 {
-	for (int k=1 ; k<= params->nbDays ; k++)
-		for (int route = 0 ; route < params->nbVehiculesPerDep ; route ++)
-			for (int i=0 ; i < params->nbClients + params->nbDepots ; i ++ )
-				depots[k][route].route->nodeAndRouteTested[i] = false ;
+  for (int route = 0 ; route < params->nbVehiculesPerDep ; route ++)
+    for (int i=0 ; i < params->nbClients + params->nbDepots ; i ++ )
+      depots[route].route->nodeAndRouteTested[i] = false ;
 }
 
-void LocalSearch::addSeqDataInPieces (Noeud * node, int length, int day)
+void LocalSearch::addSeqDataInPieces (Noeud * node, int length)
 {
 	Noeud * cour = node ;
 	SeqData * courSeq ;
@@ -1677,11 +1341,11 @@ void LocalSearch::addSeqDataInPieces (Noeud * node, int length, int day)
 		courSeq = cour->seqi_j[temp-1];
 		myseqs.push_back(courSeq);
 		courLenght -= temp ;
-		if (courLenght != 0) cour = clients[day][courSeq->lastNode].suiv ;
+		if (courLenght != 0) cour = clients[courSeq->lastNode].suiv ;
 	}
 }
 
-void LocalSearch::addReverseSeqDataInPieces (Noeud * node, int length, int day)
+void LocalSearch::addReverseSeqDataInPieces (Noeud * node, int length)
 {
 	Noeud * cour = node ;
 	SeqData * courSeq ;
@@ -1694,7 +1358,7 @@ void LocalSearch::addReverseSeqDataInPieces (Noeud * node, int length, int day)
 		courSeq = cour->seqj_i[temp-1];
 		myseqTemp.push_back(courSeq);
 		courLenght -= temp ;
-		if (courLenght != 0) cour = clients[day][courSeq->firstNode].suiv ;
+		if (courLenght != 0) cour = clients[courSeq->firstNode].suiv ;
 	}
 
 	for ( list<SeqData*>::reverse_iterator it=myseqTemp.rbegin() ; it != myseqTemp.rend() ; it++)
@@ -1709,7 +1373,6 @@ LocalSearch::LocalSearch(void)
 
 LocalSearch::LocalSearch(Params * params,Individu * individu) : params (params),individu(individu)
 {
-	nbDays = params->nbDays ;
 	int nbVeh ;
 	allAttributesSet = true ;
 	nbInterSwap = 0 ;
@@ -1718,36 +1381,28 @@ LocalSearch::LocalSearch(Params * params,Individu * individu) : params (params),
 	nbIntra2Opt = 0 ;
 	seqdeb = NULL ;
 	nbTotalRISinceBeginning = 0 ;
-	nbTotalPISinceBeginning = 0 ;
 	vector < Noeud * > tempNoeud ;
 	vector <int> temp2 ;
 
-	clients = new Noeud * [params->nbDays+1] ;
-	depots = new Noeud * [params->nbDays+1] ;
-	depotsFin = new Noeud * [params->nbDays+1] ;
-	routes = new Route * [params->nbDays+1] ;
+	nbVeh = params->nombreVehicules ;
+	clients = new Noeud [params->nbClients + params->nbDepots + 1] ;
+	depots = new Noeud [nbVeh] ;
+	depotsFin = new Noeud [nbVeh] ;
+	routes = new Route [nbVeh] ; 
 
-	for (int kk = 1 ; kk <= params->nbDays ; kk++)
+	for (int i = 0 ; i <  params->nbClients + params->nbDepots ; i ++ )
+		clients[i] = Noeud(false,i,false,NULL,NULL,NULL,params);
+
+	for (int i = 0 ; i < nbVeh ; i++ )
 	{
-		nbVeh = params->nombreVehicules[kk] ;
-		clients[kk] = new Noeud [params->nbClients + params->nbDepots + 1] ;
-		depots[kk] = new Noeud [nbVeh] ;
-		depotsFin[kk] = new Noeud [nbVeh] ;
-		routes[kk] = new Route [nbVeh] ; 
-
-		for (int i = 0 ; i <  params->nbClients + params->nbDepots ; i ++ )
-			clients[kk][i] = Noeud(false,i,kk,false,NULL,NULL,NULL,params);
-
-		for (int i = 0 ; i < nbVeh ; i++ )
-		{
-			depots[kk][i] = Noeud(true,params->ordreVehicules[kk][i].depotNumber,kk,false,NULL,NULL,NULL,params);
-			depotsFin[kk][i] = Noeud(true,params->ordreVehicules[kk][i].depotNumber,kk,false,NULL,NULL,NULL,params);
-			routes[kk][i] = Route(i,0,&params->ordreVehicules[kk][i],params,individu,kk);
-			depots[kk][i].route = &routes[kk][i] ;
-			depotsFin[kk][i].route = &routes[kk][i] ;
-			routes[kk][i].depot = &depots[kk][i] ;
-		}
+		depots[i] = Noeud(true,params->ordreVehicules[i].depotNumber,false,NULL,NULL,NULL,params);
+		depotsFin[i] = Noeud(true,params->ordreVehicules[i].depotNumber,false,NULL,NULL,NULL,params);
+		routes[i] = Route(i,0,&params->ordreVehicules[i],params,individu);
+		depots[i].route = &routes[i] ;
+		depotsFin[i].route = &routes[i] ;
+		routes[i].depot = &depots[i] ;
 	}
+	
 
 	for (int i=0 ; i < 4 ; i++)
 	{
@@ -1755,74 +1410,68 @@ LocalSearch::LocalSearch(Params * params,Individu * individu) : params (params),
 		shouldBeTested.push_back(vector<bool>(4));
 	}
 
-	for (int day = 0 ; day <= params->nbDays ; day++)
-	{
-		ordreParcours.push_back(temp2);
-		routeVide.push_back(NULL);
-	}
+  routeVide = NULL;
 
 	for (int i=params->nbDepots ; i < params->nbDepots + params->nbClients ; i++)
-		ordreParcours[0].push_back(i);
+		ordreParcours.push_back(i);
 
 	// Initialization of the SeqData structures, for all nodes
 	// These structures were designed to stay contiguous in memory (however it had only a negligible impact on performance)
 	int nbSeqsSet = 0 ;
-	int taillemyseqDatas = (params->sizeSD + params->sizeSD + 4)*(params->nbClients + params->nbDepots + 2*params->nbVehiculesPerDep)*params->nbDays ;
+	int taillemyseqDatas = (params->sizeSD + params->sizeSD + 4)*(params->nbClients + params->nbDepots + 2*params->nbVehiculesPerDep) ;
 	SeqData * myseqDatas = new SeqData [taillemyseqDatas] ;
 	seqdeb = myseqDatas ;
-	for (int k=1 ; k <= params->nbDays ; k++)
+	for (int i=0 ; i < params->nbClients + params->nbDepots ; i++) 
 	{
-		for (int i=0 ; i < params->nbClients + params->nbDepots ; i++) 
-		{
-			for (int ii=nbSeqsSet ; ii < nbSeqsSet+4+params->sizeSD+params->sizeSD ; ii++)
-				myseqDatas[ii].initialisation(clients[k][i].cour,params,individu,k,false);  
+		for (int ii=nbSeqsSet ; ii < nbSeqsSet+4+params->sizeSD+params->sizeSD ; ii++)
+			myseqDatas[ii].initialisation(clients[i].cour,params,individu,false);  
 
-			clients[k][i].seq0_i = &myseqDatas[nbSeqsSet] ;
-			clients[k][i].seqi_n = &myseqDatas[nbSeqsSet+1] ;
-			clients[k][i].seqi_0 = &myseqDatas[nbSeqsSet+2] ;
-			clients[k][i].seqn_i = &myseqDatas[nbSeqsSet+3] ;
-			for (int ii=0 ; ii<params->sizeSD ; ii++)
-				clients[k][i].seqi_j.push_back(&myseqDatas[nbSeqsSet+4+ii]);
-			for (int ii=0 ; ii<params->sizeSD ; ii++)
-				clients[k][i].seqj_i.push_back(&myseqDatas[nbSeqsSet+4+params->sizeSD+ii]);
-			clients[k][i].setRemaining();
-			nbSeqsSet += 4+params->sizeSD + params->sizeSD ;
-		}
-
-		for (int i=0 ; i < params->nbVehiculesPerDep  ; i++) 
-		{
-			for (int ii=nbSeqsSet ; ii < nbSeqsSet+4+params->sizeSD+params->sizeSD ; ii++)
-				myseqDatas[ii].initialisation(depots[k][i].cour,params,individu,k,false);
-
-			depots[k][i].seq0_i = &myseqDatas[nbSeqsSet] ;
-			depots[k][i].seqi_n = &myseqDatas[nbSeqsSet+1] ;
-			depots[k][i].seqi_0 = &myseqDatas[nbSeqsSet+2] ;
-			depots[k][i].seqn_i = &myseqDatas[nbSeqsSet+3] ;
-			for (int ii=0 ; ii<params->sizeSD ; ii++)
-				depots[k][i].seqi_j.push_back(&myseqDatas[nbSeqsSet+4+ii]);
-			for (int ii=0 ; ii<params->sizeSD ; ii++)
-				depots[k][i].seqj_i.push_back(&myseqDatas[nbSeqsSet+4+params->sizeSD+ii]);
-			depots[k][i].setRemaining();
-			nbSeqsSet += 4+params->sizeSD + params->sizeSD ;
-		}
-
-		for (int i=0 ; i < params->nbVehiculesPerDep ; i++) 
-		{
-			for (int ii=nbSeqsSet ; ii < nbSeqsSet+4+params->sizeSD+params->sizeSD ; ii++)
-				myseqDatas[ii].initialisation(depotsFin[k][i].cour,params,individu,k,false);
-
-			depotsFin[k][i].seq0_i = &myseqDatas[nbSeqsSet] ;
-			depotsFin[k][i].seqi_n = &myseqDatas[nbSeqsSet+1] ;
-			depotsFin[k][i].seqi_0 = &myseqDatas[nbSeqsSet+2] ;
-			depotsFin[k][i].seqn_i = &myseqDatas[nbSeqsSet+3] ;
-			for (int ii=0 ; ii<params->sizeSD ; ii++)
-				depotsFin[k][i].seqi_j.push_back(&myseqDatas[nbSeqsSet+4+ii]);
-			for (int ii=0 ; ii<params->sizeSD ; ii++)
-				depotsFin[k][i].seqj_i.push_back(&myseqDatas[nbSeqsSet+4+params->sizeSD+ii]);
-			depotsFin[k][i].setRemaining();
-			nbSeqsSet += 4+params->sizeSD + params->sizeSD ;
-		}
+		clients[i].seq0_i = &myseqDatas[nbSeqsSet] ;
+		clients[i].seqi_n = &myseqDatas[nbSeqsSet+1] ;
+		clients[i].seqi_0 = &myseqDatas[nbSeqsSet+2] ;
+		clients[i].seqn_i = &myseqDatas[nbSeqsSet+3] ;
+		for (int ii=0 ; ii<params->sizeSD ; ii++)
+			clients[i].seqi_j.push_back(&myseqDatas[nbSeqsSet+4+ii]);
+		for (int ii=0 ; ii<params->sizeSD ; ii++)
+			clients[i].seqj_i.push_back(&myseqDatas[nbSeqsSet+4+params->sizeSD+ii]);
+		clients[i].setRemaining();
+		nbSeqsSet += 4+params->sizeSD + params->sizeSD ;
 	}
+
+	for (int i=0 ; i < params->nbVehiculesPerDep  ; i++) 
+	{
+		for (int ii=nbSeqsSet ; ii < nbSeqsSet+4+params->sizeSD+params->sizeSD ; ii++)
+			myseqDatas[ii].initialisation(depots[i].cour,params,individu,false);
+
+		depots[i].seq0_i = &myseqDatas[nbSeqsSet] ;
+		depots[i].seqi_n = &myseqDatas[nbSeqsSet+1] ;
+		depots[i].seqi_0 = &myseqDatas[nbSeqsSet+2] ;
+		depots[i].seqn_i = &myseqDatas[nbSeqsSet+3] ;
+		for (int ii=0 ; ii<params->sizeSD ; ii++)
+			depots[i].seqi_j.push_back(&myseqDatas[nbSeqsSet+4+ii]);
+		for (int ii=0 ; ii<params->sizeSD ; ii++)
+			depots[i].seqj_i.push_back(&myseqDatas[nbSeqsSet+4+params->sizeSD+ii]);
+		depots[i].setRemaining();
+		nbSeqsSet += 4+params->sizeSD + params->sizeSD ;
+	}
+
+	for (int i=0 ; i < params->nbVehiculesPerDep ; i++) 
+	{
+		for (int ii=nbSeqsSet ; ii < nbSeqsSet+4+params->sizeSD+params->sizeSD ; ii++)
+			myseqDatas[ii].initialisation(depotsFin[i].cour,params,individu,false);
+
+		depotsFin[i].seq0_i = &myseqDatas[nbSeqsSet] ;
+		depotsFin[i].seqi_n = &myseqDatas[nbSeqsSet+1] ;
+		depotsFin[i].seqi_0 = &myseqDatas[nbSeqsSet+2] ;
+		depotsFin[i].seqn_i = &myseqDatas[nbSeqsSet+3] ;
+		for (int ii=0 ; ii<params->sizeSD ; ii++)
+			depotsFin[i].seqi_j.push_back(&myseqDatas[nbSeqsSet+4+ii]);
+		for (int ii=0 ; ii<params->sizeSD ; ii++)
+			depotsFin[i].seqj_i.push_back(&myseqDatas[nbSeqsSet+4+params->sizeSD+ii]);
+		depotsFin[i].setRemaining();
+		nbSeqsSet += 4+params->sizeSD + params->sizeSD ;
+	}
+	
 }
 
 LocalSearch::~LocalSearch(void)
@@ -1832,13 +1481,6 @@ LocalSearch::~LocalSearch(void)
 
 	if (allAttributesSet)
 	{
-		for (int kk = 1 ; kk <= nbDays ; kk++)
-		{
-			delete [] clients[kk] ;
-			delete [] depots[kk] ;
-			delete [] depotsFin[kk] ;
-			delete [] routes[kk] ;
-		}
 		delete [] clients ;
 		delete [] depots ;
 		delete [] depotsFin ;

@@ -71,14 +71,6 @@ public:
 	// random seed
 	int seed ;
 
-	// Problem type
-	bool multiDepot ; // is there multiple depots in the problem
-	bool periodique ; // is there multiple periods in the problem
-
-	/* CASE OF VEHICLE ROUTING PROBLEMS WITH TURN PENALTIES */
-	// paths between arcs in the original network
-	// the arc 0 is a fake arc which corresponds to the depot to himself
-	// the distance between an arc i and arc j is the sum of distances of these arcs with the turn penalties on the way.
 	int num_nodes ;
 	int ar_maxNbNodesPerClient ;
 	vector < vector < double > > cost_mat ;
@@ -87,30 +79,23 @@ public:
 	// number of customers/services considered in the vehicle routing problem
 	int nbClients ;
 
-	// sum of customers x visit frequency (multi-period problems)
+	// number of customers
 	int nbTotalServices ;
 
 	// sum of demand quantity of the customers
 	double totalDemand ;
 
-	// number of days
-	int nbDays ;
-	int ancienNbDays ; // copy of the number of days
-
 	// number of vehicles per depot
 	int nbVehiculesPerDep ;
 
 	// number of depots
-	int nbDepots ;
+	const int nbDepots = 1;
 
-	// for each day, sum of the capacity of the vehicles
-	vector <double> dayCapacity ;
+	// list of vehicles available
+	vector < Vehicle > ordreVehicules ;
 
-	// list of vehicles available for each day
-	vector < vector < Vehicle > > ordreVehicules ;
-
-	// number of vehicles available for each day
-	vector <int> nombreVehicules ;
+	// number of vehicles available
+	int nombreVehicules ;
 
 	// array containing the information of each separate client/service
 	Client * cli ;
@@ -122,10 +107,6 @@ public:
 	vector < vector <bool> > isCorrelated ;
 
 	/* ----------------- METHOD PARAMETERS & OTHER DATA ---------------- */
-
-	// Are we running an Iterated Local Search ?
-	// In this case the behavior of the method is changed at several points
-	bool isILS_general ;
 
 	// Are we running a feasibility problem ?
 	// In this case we would stop the search as soon as a feasible solution is found

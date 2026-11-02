@@ -45,9 +45,6 @@ public:
 // Index of the route
 int cour ;
 
-// Day in which the route occurs
-int day ;
-
 // Depot node associated to the route
 Noeud * depot ;
 
@@ -68,26 +65,15 @@ void reverse () ;
 // to remember the orientation of the visits (and not only the overall cost information)
 void updateRouteData (bool isForPrinting) ;
 
-// coutInsertionClient[i][p] stores the best insertion cost of client [i] with pattern [p] in this route
-// The pattern information is due to the CARP specificity
-vector < vector <double> > coutInsertionClient ;
-
-// placeInsertionClient[i][p] stores the best place of insertion of client [i] with pattern [p] in this route
-// The pattern information is due to the CARP specificity
-vector < vector <Noeud *> > placeInsertionClient ;
-
 // For each node, a bool saying if all moves involving this node and route have been tested without success
 vector <bool> nodeAndRouteTested ;
-
-// Reset the computation of all insertion values
-void initiateInsertions();
 
 // little debugging test
 void testSeqDatas();
 
 Route(void);
 
-Route(int cour, Noeud * depot, Vehicle * vehicle, Params * params, Individu * indiv, int day);
+Route(int cour, Noeud * depot, Vehicle * vehicle, Params * params, Individu * indiv);
 
 ~Route(void);
 };

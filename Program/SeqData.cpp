@@ -53,10 +53,10 @@ SeqData::SeqData()
 SeqData::~SeqData()
 {}
 
-void SeqData::initialisation(int Ucour, Params * mesParams, Individu * myIndiv, int day,bool isForPathTracking)
+void SeqData::initialisation(int Ucour, Params * mesParams, Individu * myIndiv, bool isForPathTracking)
 {
 	params = mesParams ;
-	load = params->cli[Ucour].demandPatDay[myIndiv->chromP[Ucour].pat][day] ;
+	load = params->cli[Ucour].demand;
 
 	if (!isInitialized)
 	{
@@ -100,7 +100,7 @@ void SeqData::initialisation(int Ucour, Params * mesParams, Individu * myIndiv, 
 	lastNode = Ucour ;
 }
 
-void SeqData::concatOneAfter(SeqData * seq, int Vcour, Individu * myIndiv, int day)
+void SeqData::concatOneAfter(SeqData * seq, int Vcour, Individu * myIndiv)
 {
 	double tempc ;
 	Client * firstCli = &params->cli[seq->firstNode] ;
@@ -122,12 +122,12 @@ void SeqData::concatOneAfter(SeqData * seq, int Vcour, Individu * myIndiv, int d
 		}
 	}
 
-	load = seq->load + params->cli[Vcour].demandPatDay[myIndiv->chromP[Vcour].pat][day];
+	load = seq->load + params->cli[Vcour].demand;
 	firstNode = seq->firstNode ;
 	lastNode = Vcour ;
 }
 
-void SeqData::concatOneAfterWithPathTracking(SeqData * seq, int Vcour, Individu * myIndiv, int day)
+void SeqData::concatOneAfterWithPathTracking(SeqData * seq, int Vcour, Individu * myIndiv)
 {
 	double tempc ;
 	Client * firstCli = &params->cli[seq->firstNode] ;
@@ -163,13 +163,13 @@ void SeqData::concatOneAfterWithPathTracking(SeqData * seq, int Vcour, Individu 
 		}
 	}
 
-	load = seq->load + params->cli[Vcour].demandPatDay[myIndiv->chromP[Vcour].pat][day];
+	load = seq->load + params->cli[Vcour].demand;
 	firstNode = seq->firstNode ;
 	lastNode = Vcour ;
 }
 
 
-void SeqData::concatOneBefore(SeqData * seq,int Vcour, Individu * myIndiv, int day)
+void SeqData::concatOneBefore(SeqData * seq,int Vcour, Individu * myIndiv)
 { 
 	double tempc ;
 	Client * firstCli = &params->cli[seq->firstNode] ;
@@ -191,7 +191,7 @@ void SeqData::concatOneBefore(SeqData * seq,int Vcour, Individu * myIndiv, int d
 		}
 	}
 
-	load = seq->load + params->cli[Vcour].demandPatDay[myIndiv->chromP[Vcour].pat][day];
+	load = seq->load + params->cli[Vcour].demand;
 	firstNode = Vcour ;
 	lastNode = seq->lastNode ;
 }

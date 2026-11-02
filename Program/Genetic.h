@@ -70,18 +70,13 @@ public:
 	// nbRec is a parameter that says if we are in the main loop of the algorithm, or inside a decomposition phase
 	void evolve (int maxIterNonProd, int nbRec) ;
 
-	// sub functions to differenciate the behavior with a GA and with an ILS.
-    void evolveHGA (int maxIterNonProd, int nbRec) ;
-	void evolveILS () ;    
+  void evolveHGA (int maxIterNonProd, int nbRec) ;
 
 	// Repairing an infeasible solution
 	void reparer ();
 
 	// OX Crossover
 	void crossOX ();
-
-	// PIX Crossover
-	void crossPIX ();
 
 	// temporary structures used in the crossover
 	vector < int > freqClient ;

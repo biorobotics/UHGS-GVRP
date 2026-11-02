@@ -26,47 +26,6 @@
 #include "math.h"
 using namespace std ;
 
-// Used to store coordinates of nodes
-struct couple {
-	double x;
-	double y;
-};
-
-// Used to store the list of allowable patterns for each customer
-struct pattern {
-	int pat;
-	int dep;
-	double cost;
-
-	// Tests if pat2 is a possible completion of an incomplete pattern pat1 (PCARP)
-	static bool isSubset(pattern pat1, pattern pat2)
-	{
-		if (pat2.dep != pat1.dep && pat1.dep != -1)
-			return false ;
-		
-		int code1 = pat1.pat ;
-		int code2 = pat2.pat ;
-
-		while(code1 != 0)
-		{
-			if (code1%2 > code2%2)
-				return false ;
-			code1 = code1/2 ;
-			code2 = code2/2 ;
-		}
-		return true ;
-	}
-};
-
-// used only for NEARP with turn penalties
-struct Arc {
-	int indexArc ;
-	int nodeBegin ;
-	int nodeEnd ;
-	double cost ;
-	int nb_Turns ;
-};
-
 // different client types
 enum ClientType {AR_DEPOT, AR_CLIENT_NODE, AR_CLIENT_EDGE, AR_CLIENT_ARC};
 
@@ -77,21 +36,14 @@ class Client
 	// customer number
     int custNum ;
 
-    // coordinates
-    couple coord ;
-
 	// duration for a service
 	double serviceDuration ;
 
 	// demand of a customer
-	// (demand per day in a PCARP).
 	double demand ;
 
 	// how many visits per week
 	int freq ;
-
-	// temporary variable used during computation of data structures for the patterns (multi-period problems)
-	int codeTravail ;
 
 	// type of service
 	ClientType ar_nodeType ;
@@ -103,42 +55,8 @@ class Client
 	int ar_nodesExtr0 ;
 	int ar_nodesExtr1 ;
 
-	// For NEARP with turn penalties, the number of modes is defined (1 for a service on an arc, 2 for an edge, more for a node in the presence of turn penalties)
 	int ar_nbNodes ;
 	vector <int> ar_Nodes ;
-
-	// list of all possible visit combinations (multi-period problems)
-	// Each visit combination is coded with the decimal equivalent of
-    // the corresponding binary bit string. For example, in a 5-day
-    // period, the code 10 which is equivalent to the bit string 01010
-    // means that a customer is visited on days 2 and 4. (Days are
-    // numbered from left to right.)
-    vector <pattern> visits ;
-
-	// A copy of the previous structure (used to still have the original back when performing problem decompositions)
-	vector <pattern> visitsOrigin ;
-
-	// visitsDyn[code] returns the index of the pattern in the list of patterns for the customer, otherwise -1 if this pattern is not valid
-	vector <int> visitsDyn ;
-	void computeVisitsDyn (int nbDays, int ancienNbDays)  ;
-
-	// test to know if a visit pattern is accepted
-	bool testPat (int pattern, int ancienNbDays) ;
-
-	// jourSuiv[code][day] tells in which next day a customer should be placed, according to already existing visits
-	vector < vector < int > > jourSuiv ;
-
-	/* FOR THE PCARP */
-	// In the PCARP, the quantity to pick on a day may vary depending on the choice of pattern
-	// As it corresponds to the demand accumulated during all previous days and this day itself.
-	// demandPatDay[pattern][day] returns the demand accumulated until "day"
-	// It returns -1 in case of infeasibility
-	vector < vector < double > > demandPatDay ;
-
-	// functions used for the pre-processing of these data structures
-	void computeJourSuiv (int nbDays, int ancienNbDays) ;
-	void frec (int y, int z,int n, int ancienNbDays) ;
-	void ajoute (int y,int z, int ancienNbDays) ;
 
 	// For a customer, ordered list of depots by increasing distance 
 	vector <int> ordreProximiteDepots ;

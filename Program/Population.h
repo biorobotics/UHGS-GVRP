@@ -91,9 +91,6 @@ class Population
    // Diversification procedure (replace a large part of the population by new random solutions)
    void diversify ();
 
-   // Clear (no more individual in the population), used only in the ILS version of the code
-   void clear();
-	   
    // Feasible and Infeasible subpopulations
    SousPop * valides;
    SousPop * invalides;
@@ -121,7 +118,7 @@ class Population
    // Solution check
    // Verifies the cost and feasibility of the solution
    // Using only the instance data and the shortest path data (not relying on the auxiliary data structures)
-   bool solutionChecker(vector < vector < vector < int > > > & allRoutes, vector < vector < vector <int> > > & allRoutesNodes, double expectedCost, double expectedMaxRoute);
+   bool solutionChecker( vector < vector < int  > > & allRoutes,  vector < vector <int > > & allRoutesNodes, double expectedCost, double expectedMaxRoute);
    
    // Print the best solution in the BKS file, only if its better than the previous BKS
    void ExportBKS (string nomFichier) ;

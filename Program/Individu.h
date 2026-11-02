@@ -110,34 +110,31 @@ public:
 	double maxRoute ;
 
 	// The giant tour of the individual
-	// chromT[i][j] -> day i, j^th customer in the giant tour
-	vector < vector<int> > chromT ;
-
-	// Pattern chromosome of an individual
-	vector < pattern > chromP ;
+	// chromT[j], jth customer in the giant tour
+	vector<int> chromT ;
 
 	// Indices of the beginning of the routes (if already computed via Split)
-	// chromR[i][j] -> day i, route j, gives the index in the chromT of the first customer in this route
-	vector < vector<int> > chromR ;
+	// chromR[j] -> route j, gives the index in the chromT of the first customer in this route
+	vector<int > chromR ;
 
-	// suivants[client][day] gives the next customer in the considered day
+	// suivants[client] gives the next customer
 	// Used to compute the Hamming distance between solutions
-	// if the customer does not exist in this day, returns -1
-	vector < vector<int> > suivants ;
+	// if the customer does not exist, returns -1
+	vector<int> suivants ;
 
-	// suivants[client][day] gives the previous customer in the considered day
+	// suivants[client] gives the previous customer
 	// Used to compute the Hamming distance between solutions
-	// if the customer does not exist in this day, returns -1
-	vector < vector<int> > precedents ;
+	// if the customer does not exist, returns -1
+	vector<int> precedents ;
 
 	// computing the suivants and precedents tables
 	void computeSuivants();
 
 	// working table for split (dynamic programming for Split)
-	vector < vector < CoutSol> > potentiels ;
+	vector < vector < CoutSol >> potentiels ;
 
 	// table of predecessors (dynamic programming for Split)
-	vector < vector < vector<int> > > pred ;
+	 vector < vector<int > > pred ;
 
 	// storing the cost of the evaluations of arcs (i,j) in the Split graph
 	vector < vector < CoutSol> > coutArcsSplit ;
@@ -147,9 +144,6 @@ public:
 
 	// tells if the individual is feasible
 	bool estValide ;
-
-	// vector used in crossover PIX
-	vector < int > toPlace ;
 
 	// measure of distance from "this" to an individual indiv2
 	double distance(Individu * indiv2);
@@ -180,17 +174,17 @@ public:
 
 	// simple Split function based on a shortest path (does not necessary respect the number of vehicles)
 	// returns 1 in case of success, 0 otherwise
-	int splitSimple(int k) ;
+	int splitSimple() ;
 
 	// Split function for problems with limited fleet, based on a m-shortest path. 
 	// (repeating m times the iteration of Bellman on all nodes)
-	void splitLF(int k) ;
+	void splitLF() ;
 
 	// quick function to fill correctly all data structures, once Split has been performed
 	void measureSol() ;
 
 	// initialization of the potentials vector for Split
-	void initPot(int day) ;
+	void initPot() ;
 
 	// updating the LocalSearch structure with the information of the Individu.
 	// Warning, Split must have been computed before 
@@ -199,16 +193,9 @@ public:
 	// Updating the individual data structures from the local search information
 	void updateIndiv() ;
 
-	// little test for debugging (PVRP)
-	void testPatternCorrectness();
-
 	// copy of an individual in the other
 	// Warning, only copies the chromosomes for storage, not all other structures (potentials and LS)
 	void recopieIndividu (Individu * destination , Individu * source);
-
-	// shaking operator, acting on the chromT structure, used by the ILS version of the code
-	// with nbShak random swaps between two customer visits in randomly chosen days.
-	void shakingSwap (int nbShak);
 
 	// constructor of a random individual
 	// if the flag "createAllStructures" is set to true, all search structures, including the LS are also initialized
