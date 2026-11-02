@@ -82,9 +82,6 @@ public:
 	// number of customers
 	int nbTotalServices ;
 
-	// sum of demand quantity of the customers
-	double totalDemand ;
-
 	// number of vehicles per depot
 	int nbVehiculesPerDep ;
 

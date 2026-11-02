@@ -88,9 +88,6 @@ public:
 	// Access to the parameters of the problem
 	Params * params ;
 
-	// How old is this individual
-	int age ;
-
 	// fitness of the individual
 	double fitnessEtendu ;
 

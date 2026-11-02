@@ -391,125 +391,6 @@ Individu * Population::getIndividuBestInvalide ()
 	else return NULL ;
 }
 
-void Population::ExportBest (string nomFichier) 
-{
-	vector <int> rout ;
-	 vector < vector <int > > allRoutes ; 
-	 vector < vector <int > > allRoutesNodes ; 
-	int compteur ;
-	Noeud * noeudActuel ;
-	LocalSearch * loc ;
-	ofstream myfile;
-	double temp, temp2 ;
-	Individu * bestValide = getIndividuBestValide ();
-
-	if (bestValide != NULL)
-	{
-		// we load the local search structure to have the full information on the routes and easily print the solution
-		// we set a high penalty, so Split and LS does not have the bad idea to create an infeasible solution from the best known feasible one
-		temp = params->penalityCapa ;
-		temp2 = params->penalityLength ;
-		params->penalityCapa = 100000 ;
-		params->penalityLength = 100000 ;
-		education(bestValide);
-		loc = trainer->localSearch ;
-		params->penalityCapa = temp ;
-		params->penalityLength = temp2 ;
-
-		// Little debugging tests before printing
-		if (!trainer->estValide || trainer->coutSol.lengthViol > 0.000001 || trainer->coutSol.capacityViol > 0.000001)
-			throw string("ERROR: Last individual became infeasible !!!!") ;
-		
-		// Opening the file to write the solution
-		myfile.open(nomFichier.data());
-		myfile.precision(10);
-		cout.precision(10);
-		
-		// Writing the distance
-    cout << "Writing the best solution : distance : " << trainer->coutSol.distance ;
-    myfile << trainer->coutSol.distance << endl ;
-
-		// Writing the number of routes
-    cout << " | nbRoutes : " << trainer->nbRoutes ;
-    myfile << trainer->nbRoutes << endl ;
-
-		cout << " | in " << nomFichier.c_str() << endl ;
-
-		// Printing the total time of the run
-		// (we print the number of clock ticks to help for short runs, the user will do the proper conversion) 
-		myfile << (long long) clock() << endl ;
-
-		// Printing the time to find the best solution
-		// (we print the number of clock ticks to help for short runs, the user will do the proper conversion) 
-		myfile << (long long) timeBest << endl ;
-
-		// Printing the routes and their content
-    compteur = 1 ;
-    for (int i=0 ; i < params->nombreVehicules ; i++)
-    {	
-      // Test if the route is empty
-      if (!loc->routes[i].depot->suiv->estUnDepot)
-      {
-        // The route is not empty
-        // First, we pre-process again the data structures on the route with the flag "true", which allow to track back the visits
-        loc->routes[i].updateRouteData(true); 
-        noeudActuel = loc->routes[i].depot->suiv ;
-        rout.clear();
-        rout.push_back(loc->routes[i].depot->cour);
-        rout.push_back(noeudActuel->cour);
-
-        while (!noeudActuel->estUnDepot)
-        {
-          noeudActuel = noeudActuel->suiv ;
-          rout.push_back(noeudActuel->cour);
-        }
-
-        allRoutes.push_back(rout);
-        allRoutesNodes.push_back(loc->routes[i].depot->pred->seq0_i->bestCostNodes[0][0]) ;
-
-        if( loc->routes[i].depot->pred->seq0_i->bestCostNodes[0][0].size() != rout.size())
-          throw string ("Issue : mismatch between the route size and the number of arcs reported by the SeqData");
-
-        myfile << " " << loc->routes[i].depot->cour ; // Printing the depot
-        myfile << " " << compteur ; // Printing the index of the route
-        myfile << " " << loc->routes[i].depot->pred->seq0_i->load ; // Printing the total demand
-        myfile << " " << loc->routes[i].depot->pred->seq0_i->evaluation(loc->routes[i].depot->pred->seq0_i,loc->routes[i].vehicle) << " " ; // Printing the total cost of this route
-        
-        myfile << " " << (int)rout.size() ; // Printing the number of customers in the route
-        for (int j=0 ; j < (int)rout.size() ; j++ ) // Printing the visits 
-        {
-          if (rout[j] < params->nbDepots)
-            myfile << " (D " ;
-          else
-            myfile << " (S " ;
-          myfile << rout[j] << "," ;
-          myfile << loc->routes[i].depot->pred->seq0_i->bestCostNodes[0][0][j] << ")" ;
-        }
-        myfile << endl ;
-        compteur ++ ;
-      }
-		}
-
-		myfile.close();
-
-		// Check the solution
-		if (!solutionChecker(allRoutes,allRoutesNodes,trainer->coutSol.distance,bestValide->maxRoute))
-		{
-			// If the solution does not pass the checker, then we erase the file (we will detect when running the script that some results are missing)
-			for (int i=0 ; i < 10 ; i++)
-				cout << "INFEASIBLE SOLUTION IN CHECKER -- ERASING SOLUTION !!!" << endl;
-			myfile.open(nomFichier.data(), std::ofstream::trunc);
-			myfile << "" << endl ;
-			myfile.close();
-		}
-
-	}
-	else
-	{
-		cout << "Impossible to find a feasible individual" << endl;
-	}
-}
-
 bool Population::solutionChecker( vector < vector < int  > > & allRoutes,  vector < vector <int > > & allRoutesNodes, double expectedCost, double expectedMaxRoute)
 {
 	double totalCost = 0 ;
@@ -579,33 +460,6 @@ bool Population::solutionChecker( vector < vector < int  > > & allRoutes,  vecto
 	return true ; // Success
 }
 
-void Population::ExportBKS (string nomFichier) 
-{
-	double fit ;
-	int secondValue ; 
-	ifstream fichier ;
-
-	fichier.open(nomFichier.c_str());
-	if (fichier.is_open())
-	{
-		fichier >> fit ;
-		fichier >> secondValue ;
-		fichier.close();
-		
-		// Testing if the best solution is better than the BKS
-		if (getIndividuBestValide () != NULL && getIndividuBestValide()->coutSol.evaluation < fit - 0.001)
-		{
-			cout << "!!! New BKS !!! : distance = " << getIndividuBestValide()->coutSol.evaluation << " " <<  endl ;
-			ExportBest (nomFichier);
-		}
-	}
-	else 
-	{
-		cout << " No best known solution (BKS) file has been found, creating a new file " << endl ;
-		ExportBest (nomFichier);
-	}
-}
-
 double Population::fractionValidesCharge ()
 { 
 	int count = 0 ;
@@ -655,21 +509,12 @@ double Population::getMoyenneInvalides ()
 	return  moyenne / min(invalides->nbIndiv,params->mu) ;
 }
 
-double Population::getAgeValides ()
-{
-	double ageMoyen = 0 ;
-	for (int i=0 ; i < min(valides->nbIndiv,params->mu) ; i ++)
-		ageMoyen += valides->individus[i]->age ;
-	return  ageMoyen / min(valides->nbIndiv,params->mu) ;
-}
-
 int Population::selectCompromis (SousPop * souspop)
 {
 	// Selects one individual to be eliminated from the population
 	vector <int> classement ;
 	int temp, sortant ;
 
-	updateAge ();
 	evalExtFit(souspop);
 
 	for (int i=0 ; i < souspop->nbIndiv ; i++)
@@ -700,15 +545,6 @@ int Population::selectCompromis (SousPop * souspop)
 
 	sortant = classement[souspop->nbIndiv-1] ;
 	return sortant ;
-}
-
-void Population::updateAge ()
-{
-	for (int i=0 ; i < valides->nbIndiv ; i++)
-		valides->individus[i]->age ++  ;
-
-	for (int i=0 ; i < invalides->nbIndiv ; i++)
-		invalides->individus[i]->age ++  ;
 }
 
 void Population::education(Individu * indiv)
@@ -756,5 +592,4 @@ void Population::afficheEtat(int nbIter)
 		<< " duration " << getIndividuBestInvalide()->coutSol.lengthViol 
 		<< " load " << getIndividuBestInvalide()->coutSol.capacityViol ;
 	cout << endl ;
-	//cout << " | Age Valides : " << getAgeValides() << endl ;
 }

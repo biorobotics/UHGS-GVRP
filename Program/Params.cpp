@@ -42,7 +42,6 @@ bool compPredicate(pairB i, pairB j)
 void Params::calculeStructures () 
 {
 	// Initializing other structures of the search
-	vector < vector < bool > > tempB ;
 	vector <bool> tempB2 ;
 	vector <pairB> myVector ;
 	pairB myPair ;
@@ -87,12 +86,6 @@ void Params::calculeStructures ()
 
 void Params::getClient (int i, Client * myCli)
 {
-	// Reading/Initializing the data for each customer
-	string tempstring ;
-	char * myChars = new char[100]; 
-	int t_arc, t_from, t_to, t_qty, t_trav, t_col, t_inv, t_freq ;
-	bool isNewService ;
-
 	myCli->custNum = i ;
 	myCli->freq = 1 ;
 	myCli->serviceDuration = 0 ;
@@ -108,7 +101,6 @@ void Params::getClient (int i, Client * myCli)
   }
 
 	if (i >= 1) nbTotalServices += myCli->freq ;
-	delete [] myChars ;
 }
 
 // vc is vehicle capacity. Assume depot cluster is cluster 0 and depot node is node 0
@@ -126,7 +118,6 @@ Params::Params(unsigned int seedRNG, int nbVeh, double vc, const Ref<const Vecto
     
 	// Formerly the code from preleveDonnees ();
 	nbTotalServices = 0 ;
-	totalDemand = 0 ;
 
   int num_clusters = cluster_to_node_ptr.size() - 1; // Not including depot
   int num_nodes = cost_mat.rows();
@@ -160,9 +151,7 @@ Params::Params(unsigned int seedRNG, int nbVeh, double vc, const Ref<const Vecto
 
 	for (int i=1 ; i <= num_clusters; i++)
 	{
-    cli[i].ar_nodesExtr0 = i ;
     cli[i].demand = demand_per_cluster[i] ;
-    totalDemand += cli[i].demand ;
 	}
 
 	this->cost_mat.resize(num_nodes);

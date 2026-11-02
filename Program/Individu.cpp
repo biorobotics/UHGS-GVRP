@@ -47,7 +47,6 @@ Individu::Individu(Params * params, bool createAllStructures) : params(params)
 		/* CREATING THE INITIAL INDIVIDUAL */
 		vector < vector < int > > tempVect2 ;
 		int temp, jj; 
-		age = 0 ;
 		isFitnessComputed = false ;
 
 		// shuffling
@@ -102,7 +101,6 @@ void Individu::recopieIndividu (Individu * destination , Individu * source)
 	destination->coutSol.lengthViol = source->coutSol.lengthViol ;
 	destination->coutSol.routes = source->coutSol.routes ;
 	destination->isFitnessComputed = source->isFitnessComputed ;
-	destination->age = 0 ;
 	destination->estValide = source->estValide ;
 	destination->suivants = source->suivants ;
 	destination->precedents = source->precedents ;

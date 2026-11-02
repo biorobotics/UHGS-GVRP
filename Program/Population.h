@@ -112,17 +112,11 @@ class Population
 
    //////////////////////////////////////////////////////////
 
-   // Print the best solution in a file
-   void ExportBest (string nomFichier) ;
-
    // Solution check
    // Verifies the cost and feasibility of the solution
    // Using only the instance data and the shortest path data (not relying on the auxiliary data structures)
    bool solutionChecker( vector < vector < int  > > & allRoutes,  vector < vector <int > > & allRoutesNodes, double expectedCost, double expectedMaxRoute);
    
-   // Print the best solution in the BKS file, only if its better than the previous BKS
-   void ExportBKS (string nomFichier) ;
-
    /* FUNCTIONS FOR REGULAR PRINTOUTS OF THE STATUS OF THE POPULATION */
 
    // get the fraction of valid individuals with respect to the load constraint
@@ -140,17 +134,11 @@ class Population
    // get the average cost of an infeasible solution in the population
    double getMoyenneInvalides ();
 
-   // get the average age of feasible solutions
-   double getAgeValides ();
-
    // print a small report of the status of the population
    void afficheEtat(int NbIter);
 
    // update the count of valid individuals
    void updateNbValides (Individu * indiv);
-
-   // update the age of the individuals
-   void updateAge ();
 
    // Constructor
    Population(Params * params);

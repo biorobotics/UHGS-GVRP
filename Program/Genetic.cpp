@@ -35,7 +35,7 @@ void Genetic::evolveHGA (int maxIterNonProd, int nbRec)
 	string temp ;
 	double fitBeforeRepair ;
 	CoutSol bestSolFeasibility ;
-	clock_t debut = clock() ; // When iterating several time the HGA (e.g. PCARP, the time limit applies to one iteration -- fleet size or max distance value)
+	clock_t debut = clock() ; 
 
 	if (population->getIndividuBestValide() != NULL) bestSolFeasibility = population->getIndividuBestValide()->coutSol ;
 	else bestSolFeasibility = population->getIndividuBestInvalide()->coutSol ;
