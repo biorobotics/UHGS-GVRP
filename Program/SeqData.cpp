@@ -26,8 +26,8 @@
 SeqData::SeqData(Params * params)
 {
 	this->params = params ;
-	firstNode = -1 ;
-	lastNode = -1 ;
+	firstCluster = -1 ;
+	lastCluster = -1 ;
 
 	distanceTemp = vector < double > (params->ar_maxNbNodesPerClient);
 	distanceTemp2 = vector < double > (params->ar_maxNbNodesPerClient);
@@ -45,8 +45,8 @@ SeqData::SeqData(Params * params)
 
 SeqData::SeqData()
 {
-	firstNode = -1 ;
-	lastNode = -1 ;
+	firstCluster = -1 ;
+	lastCluster = -1 ;
 	isInitialized = false ;
 }
 
@@ -96,15 +96,15 @@ void SeqData::initialisation(int U_cluster_idx, Params * mesParams, Individu * m
 	}
 
 	distance = 0 ;
-	firstNode = U_cluster_idx ;
-	lastNode = U_cluster_idx ;
+	firstCluster = U_cluster_idx ;
+	lastCluster = U_cluster_idx ;
 }
 
 void SeqData::concatOneAfter(SeqData * seq, int V_cluster_idx, Individu * myIndiv)
 {
 	double tempc ;
-	Client * firstCli = &params->cli[seq->firstNode] ;
-	Client * lastCli  = &params->cli[seq->lastNode] ;
+	Client * firstCli = &params->cli[seq->firstCluster] ;
+	Client * lastCli  = &params->cli[seq->lastCluster] ;
 	Client * VCli = &params->cli[V_cluster_idx] ;
 	distance = 1.e20 ;
 
@@ -123,15 +123,15 @@ void SeqData::concatOneAfter(SeqData * seq, int V_cluster_idx, Individu * myIndi
 	}
 
 	load = seq->load + params->cli[V_cluster_idx].demand;
-	firstNode = seq->firstNode ;
-	lastNode = V_cluster_idx ;
+	firstCluster = seq->firstCluster ;
+	lastCluster = V_cluster_idx ;
 }
 
 void SeqData::concatOneAfterWithPathTracking(SeqData * seq, int V_cluster_idx, Individu * myIndiv)
 {
 	double tempc ;
-	Client * firstCli = &params->cli[seq->firstNode] ;
-	Client * lastCli  = &params->cli[seq->lastNode] ;
+	Client * firstCli = &params->cli[seq->firstCluster] ;
+	Client * lastCli  = &params->cli[seq->lastCluster] ;
 	Client * VCli = &params->cli[V_cluster_idx] ;
 	distance = 1.e20 ;
 
@@ -164,16 +164,16 @@ void SeqData::concatOneAfterWithPathTracking(SeqData * seq, int V_cluster_idx, I
 	}
 
 	load = seq->load + params->cli[V_cluster_idx].demand;
-	firstNode = seq->firstNode ;
-	lastNode = V_cluster_idx ;
+	firstCluster = seq->firstCluster ;
+	lastCluster = V_cluster_idx ;
 }
 
 
 void SeqData::concatOneBefore(SeqData * seq,int V_cluster_idx, Individu * myIndiv)
 { 
 	double tempc ;
-	Client * firstCli = &params->cli[seq->firstNode] ;
-	Client * lastCli  = &params->cli[seq->lastNode] ;
+	Client * firstCli = &params->cli[seq->firstCluster] ;
+	Client * lastCli  = &params->cli[seq->lastCluster] ;
 	Client * VCli = &params->cli[V_cluster_idx] ;
 	distance = 1.e20 ;
 
@@ -192,8 +192,8 @@ void SeqData::concatOneBefore(SeqData * seq,int V_cluster_idx, Individu * myIndi
 	}
 
 	load = seq->load + params->cli[V_cluster_idx].demand;
-	firstNode = V_cluster_idx ;
-	lastNode = seq->lastNode ;
+	firstCluster = V_cluster_idx ;
+	lastCluster = seq->lastCluster ;
 }
 
 // Returns cost of seq1
@@ -205,8 +205,8 @@ double SeqData::evaluation(SeqData * seq1, Vehicle * vehicle)
 // Computes cost of concatenating seq1 to seq2 (seq2 comes after seq1)
 double SeqData::evaluation(SeqData * seq1, SeqData * seq2, Vehicle * vehicle) 
 {
-	Client * cli1 = &params->cli[seq1->lastNode] ;
-	Client * cli2 = &params->cli[seq2->firstNode] ;
+	Client * cli1 = &params->cli[seq1->lastCluster] ;
+	Client * cli2 = &params->cli[seq2->firstCluster] ;
 	double bestc = 1.e30 ;
 	double tempc ;
 
@@ -226,8 +226,8 @@ double SeqData::evaluation(SeqData * seq1, SeqData * seq2, Vehicle * vehicle)
 
 double SeqData::evaluation(SeqData * seq1, SeqData * seq2, Vehicle * vehicle, double & mydist, double & mytminex, double & myloadex) 
 {
-	Client * cli1 = &params->cli[seq1->lastNode] ;
-	Client * cli2 = &params->cli[seq2->firstNode] ;
+	Client * cli1 = &params->cli[seq1->lastCluster] ;
+	Client * cli2 = &params->cli[seq2->firstCluster] ;
 	double bestc = 1.e30 ;
 	double tempc ;
 
@@ -252,10 +252,10 @@ double SeqData::evaluation(SeqData * seq1, SeqData * seq2, Vehicle * vehicle, do
 // Compute cost of concatenating seq1, seq2, seq3 in that order
 double SeqData::evaluation(SeqData * seq1, SeqData * seq2, SeqData * seq3, Vehicle * vehicle) 
 {
-	Client * cliLast1 = &params->cli[seq1->lastNode] ;
-	Client * cliLast2 = &params->cli[seq2->lastNode] ;
-	Client * cliFirst2 = &params->cli[seq2->firstNode] ;
-	Client * cliFirst3 = &params->cli[seq3->firstNode] ;
+	Client * cliLast1 = &params->cli[seq1->lastCluster] ;
+	Client * cliLast2 = &params->cli[seq2->lastCluster] ;
+	Client * cliFirst2 = &params->cli[seq2->firstCluster] ;
+	Client * cliFirst3 = &params->cli[seq3->firstCluster] ;
 
 	double bestc ;
 	double tempc ;
@@ -326,9 +326,9 @@ double SeqData::evaluation(vector <SeqData *> seqs, Vehicle * vehicle)
 	{
 		seqbPred = seqs[s-1];
 		seqb = seqs[s];
-		cliPredLast = &params->cli[seqbPred->lastNode] ;
-		cliFirst = &params->cli[seqb->firstNode] ;
-		cliLast = &params->cli[seqb->lastNode] ;
+		cliPredLast = &params->cli[seqbPred->lastCluster] ;
+		cliFirst = &params->cli[seqb->firstCluster] ;
+		cliLast = &params->cli[seqb->lastCluster] ;
 		loadTemp += seqb->load ;
 
 		for (int i=0 ; i < cliFirst->ar_nbNodes ; i++)
@@ -361,21 +361,21 @@ double SeqData::evaluationLB(SeqData * seq1, Vehicle * vehicle)
 
 double SeqData::evaluationLB(SeqData * seq1, SeqData * seq2, Vehicle * vehicle) 
 {
-	return seq1->distance + seq2->distance + params->cluster_to_cluster_cost_lb[seq1->lastNode][seq2->firstNode]
+	return seq1->distance + seq2->distance + params->cluster_to_cluster_cost_lb[seq1->lastCluster][seq2->firstCluster]
 	+ max(seq1->load + seq2->load - vehicle->vehicleCapacity,0.0)*params->penalityCapa ;
 }
 
 double SeqData::evaluationLB(SeqData * seq1, SeqData * seq2, SeqData * seq3, Vehicle * vehicle) 
 {
-	return seq1->distance + seq2->distance + seq3->distance + params->cluster_to_cluster_cost_lb[seq1->lastNode][seq2->firstNode] + params->cluster_to_cluster_cost_lb[seq2->lastNode][seq3->firstNode]
+	return seq1->distance + seq2->distance + seq3->distance + params->cluster_to_cluster_cost_lb[seq1->lastCluster][seq2->firstCluster] + params->cluster_to_cluster_cost_lb[seq2->lastCluster][seq3->firstCluster]
 	+ max(seq1->load + seq2->load + seq3->load - vehicle->vehicleCapacity,0.0)*params->penalityCapa ;
 }
 
 double SeqData::evaluationLB(SeqData * seq1, SeqData * seq2, SeqData * seq3, SeqData * seq4, Vehicle * vehicle) 
 {
-	return seq1->distance + seq2->distance + seq3->distance + seq4->distance +params->cluster_to_cluster_cost_lb[seq1->lastNode][seq2->firstNode] 
-	+ params->cluster_to_cluster_cost_lb[seq2->lastNode][seq3->firstNode]
-	+ params->cluster_to_cluster_cost_lb[seq3->lastNode][seq4->firstNode]
+	return seq1->distance + seq2->distance + seq3->distance + seq4->distance +params->cluster_to_cluster_cost_lb[seq1->lastCluster][seq2->firstCluster] 
+	+ params->cluster_to_cluster_cost_lb[seq2->lastCluster][seq3->firstCluster]
+	+ params->cluster_to_cluster_cost_lb[seq3->lastCluster][seq4->firstCluster]
 	+ max(seq1->load + seq2->load + seq3->load + seq4->load - vehicle->vehicleCapacity,0.0)*params->penalityCapa ;
 }
 
@@ -390,7 +390,7 @@ double SeqData::evaluationLB(vector <SeqData *> seqs, Vehicle * vehicle)
 	{
 		seqbPred = seqs[i-1];
 		seqb = seqs[i];
-		myDistanceTemp += params->cluster_to_cluster_cost_lb[seqbPred->lastNode][seqb->firstNode] + seqb->distance ;
+		myDistanceTemp += params->cluster_to_cluster_cost_lb[seqbPred->lastCluster][seqb->firstCluster] + seqb->distance ;
 		myLoadTemp += seqb->load ;
 	}
 	return myDistanceTemp + max(myLoadTemp - vehicle->vehicleCapacity,0.0)*params->penalityCapa ;

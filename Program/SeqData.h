@@ -27,8 +27,8 @@ class SeqData
 public:
 
 	Params * params ; // Access to the problem parameters
-	int firstNode ; // first node of the SeqData
-	int lastNode ; // last node of the SeqData
+	int firstCluster ; // first node of the SeqData
+	int lastCluster ; // last node of the SeqData
 	double load ; // total demand on the SeqData
 	double cost ; // total cost of the SeqData
 	double distance ; // total distance of the SeqData

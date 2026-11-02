@@ -1270,23 +1270,23 @@ void LocalSearch::reinitAllMoves()
 
 void LocalSearch::addSeqDataInPieces (ClusterInRoute * node, int length)
 {
-	ClusterInRoute * curNode = node ;
+	ClusterInRoute * curCluster = node ;
 	SeqData * curSeq ;
 	int curLength = length + 1 ;
 	int temp ;
 	while (curLength > 0)
 	{
 		temp = min(curLength,params->sizeSD) ;
-		curSeq = curNode->seqi_j[temp-1];
+		curSeq = curCluster->seqi_j[temp-1];
 		myseqs.push_back(curSeq);
 		curLength -= temp ;
-		if (curLength != 0) curNode = clients[curSeq->lastNode].successor ;
+		if (curLength != 0) curCluster = clients[curSeq->lastCluster].successor ;
 	}
 }
 
 void LocalSearch::addReverseSeqDataInPieces (ClusterInRoute * node, int length)
 {
-	ClusterInRoute * curNode = node ;
+	ClusterInRoute * curCluster = node ;
 	SeqData * curSeq ;
 	list <SeqData*> myseqTemp ;
 	int curLength = length + 1 ;
@@ -1294,10 +1294,10 @@ void LocalSearch::addReverseSeqDataInPieces (ClusterInRoute * node, int length)
 	while (curLength > 0)
 	{
 		temp = min(curLength,params->sizeSD) ;
-		curSeq = curNode->seqj_i[temp-1];
+		curSeq = curCluster->seqj_i[temp-1];
 		myseqTemp.push_back(curSeq);
 		curLength -= temp ;
-		if (curLength != 0) curNode = clients[curSeq->firstNode].successor ;
+		if (curLength != 0) curCluster = clients[curSeq->firstCluster].successor ;
 	}
 
 	for ( list<SeqData*>::reverse_iterator it=myseqTemp.rbegin() ; it != myseqTemp.rend() ; it++)
