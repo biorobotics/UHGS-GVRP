@@ -36,9 +36,6 @@ class Client
 	// customer number
     int custNum ;
 
-	// duration for a service
-	double serviceDuration ;
-
 	// demand of a customer
 	double demand ;
 
@@ -50,9 +47,6 @@ class Client
 
 	int ar_nbNodes ;
 	vector <int> ar_Nodes ;
-
-	// For a customer, ordered list of depots by increasing distance 
-	vector <int> ordreProximiteDepots ;
 
 	// For a customer i, list of close customers j by proximity
 	vector <int> closeCustomers ;

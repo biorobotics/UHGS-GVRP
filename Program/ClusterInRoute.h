@@ -76,7 +76,7 @@ vector < int > moves ;
 ClusterInRoute(void);
 	
 // constructor 2
-ClusterInRoute(bool isDepot, int customer_or_depot_index, bool isPresent, ClusterInRoute * successor , ClusterInRoute * pred, Route * route,Params * params);
+ClusterInRoute(bool isDepot, int cluster_idx, bool isPresent, ClusterInRoute * successor , ClusterInRoute * pred, Route * route,Params * params);
 
 // destructor
 ~ClusterInRoute(void);
