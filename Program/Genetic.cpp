@@ -243,10 +243,6 @@ ticks(ticks), traces(traces), population(population), params(params)
 	// Creating the Individuals that serve to perform the Local Search and other operations
 	rejeton = new Individu (params, true) ; 
 	rejeton2 = new Individu(params, true) ; 
-	rejetonP1 = new Individu(params, true) ; 
-	rejetonP2 = new Individu(params, true) ; 
-	rejetonBestFound = new Individu(params, true) ; 
-	rejetonBestFoundAll = new Individu(params, true) ; 
 	rejeton->localSearch = new LocalSearch(params,rejeton) ;
 } 
 
@@ -254,9 +250,5 @@ Genetic::~Genetic(void)
 { 
 	delete rejeton ;
 	delete rejeton2 ;
-	delete rejetonP1 ;
-	delete rejetonP2 ;
-	delete rejetonBestFound ;
-	delete rejetonBestFoundAll ;
 }
 

@@ -57,10 +57,6 @@ public:
 	// because the individual used for storage in the population do not contain all search data structures
 	Individu * rejeton ; 
 	Individu * rejeton2 ;
-	Individu * rejetonP1 ;
-	Individu * rejetonP2 ;
-	Individu * rejetonBestFound ;
-	Individu * rejetonBestFoundAll ;
 
 	// Pointer towards the parameters of the problem
 	Params * params ;
