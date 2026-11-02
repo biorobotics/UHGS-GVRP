@@ -69,7 +69,7 @@ public:
   void evolveHGA (int maxIterNonProd, int nbRec) ;
 
 	// Repairing an infeasible solution
-	void reparer ();
+	void repair ();
 
 	// OX Crossover
 	void crossOX ();

@@ -77,7 +77,7 @@ void Genetic::evolveHGA (int maxIterNonProd, int nbRec)
 			fitBeforeRepair = offspring->costSol.evaluation ;
 			if (rand() % 2 == 0) // 50% chance to do repair on an infeasible individual
 			{
-				reparer();
+				repair();
 				if (offspring->costSol.evaluation < fitBeforeRepair - 0.01 || offspring->costSol.evaluation > fitBeforeRepair + 0.01 || offspring->isValid) 
 					place2 = population->addIndividu(offspring) ;
 				if (offspring->isValid)
@@ -136,7 +136,7 @@ void Genetic::evolveHGA (int maxIterNonProd, int nbRec)
 	}
 }
 
-void Genetic::reparer ()
+void Genetic::repair ()
 {
 	double temp, temp2  ;
 
