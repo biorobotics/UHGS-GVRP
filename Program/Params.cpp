@@ -36,7 +36,7 @@ void Params::setMethodParams()
 
 bool compPredicate(pairB i, pairB j) 
 { 
-	return (i.myparams->timeCost[i.myInt][i.iCour] < i.myparams->timeCost[j.myInt][i.iCour]) ;
+	return (i.myparams->cluster_to_cluster_cost_lb[i.myInt][i.iCour] < i.myparams->cluster_to_cluster_cost_lb[j.myInt][i.iCour]) ;
 }
 
 void Params::calculateStructures () 
@@ -203,8 +203,8 @@ Params::Params(unsigned int seedRNG, int nbVeh, double vc, const Ref<const Vecto
 Params::~Params(void)
 {
 	for (int i=0 ; i < nbClients + nbDepots ; i++)
-		delete [] timeCost[i] ;
-	delete [] timeCost ;
+		delete [] cluster_to_cluster_cost_lb[i] ;
+	delete [] cluster_to_cluster_cost_lb ;
 	delete [] cli ;
 }
 
@@ -244,10 +244,10 @@ void Params::ar_computeClientToClientDistances()
 	double myDistanceMin ;
 	double myTemp ;
 
-	timeCost = new double * [nbClients + nbDepots];
+	cluster_to_cluster_cost_lb = new double * [nbClients + nbDepots];
 	for (int i=0 ; i < nbClients + nbDepots ; i++)
 	{
-		timeCost[i] = new double [nbClients + nbDepots];
+		cluster_to_cluster_cost_lb[i] = new double [nbClients + nbDepots];
 		for (int j=0 ; j < nbClients + nbDepots ; j++)
 		{
 			myDistanceMin = 1.e20 ;
@@ -260,7 +260,7 @@ void Params::ar_computeClientToClientDistances()
 						myDistanceMin = myTemp ;
 				}
 			}
-			timeCost[i][j] = myDistanceMin ;
+			cluster_to_cluster_cost_lb[i][j] = myDistanceMin ;
 		}
 	}
 }

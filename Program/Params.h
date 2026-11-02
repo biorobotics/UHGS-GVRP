@@ -97,8 +97,8 @@ public:
 	// array containing the information of each separate client/service
 	Client * cli ;
 
-	// travel time (was used for the CVRP) now its mainly used as an intermediate structure to compute the granular search proximity
-	double ** timeCost ;
+	// intermediate structure to compute the granular search proximity
+	double ** cluster_to_cluster_cost_lb ;
 
 	// isCorrelated[i][j] returns true if and only if j is considered to be among the closest customers to i (granular search parameter)
 	vector < vector <bool> > isCorrelated ;
