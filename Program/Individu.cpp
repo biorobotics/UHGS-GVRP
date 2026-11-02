@@ -33,12 +33,12 @@ Individu::Individu(Params * params, bool createAllStructures) : params(params)
   for (int j = 0 ; j < params->nombreVehicules ; j++ )
     chromR.push_back(-1);
 
-  suivants.resize(params->nbDepots + params->nbClients );
-  precedents.resize(params->nbDepots + params->nbClients );
+  successors.resize(params->nbDepots + params->nbClients );
+  predecessors.resize(params->nbDepots + params->nbClients );
 	for (int i=0 ; i< params->nbDepots + params->nbClients ; i++)
 	{
-    suivants[i] = -1;
-    precedents[i] = -1;
+    successors[i] = -1;
+    predecessors[i] = -1;
 	}
 
 	// If we wish to also create the individual, the local search and Split structures
@@ -102,8 +102,8 @@ void Individu::copyIndividual (Individu * destination , Individu * source)
 	destination->costSol.routes = source->costSol.routes ;
 	destination->isFitnessComputed = source->isFitnessComputed ;
 	destination->isValid = source->isValid ;
-	destination->suivants = source->suivants ;
-	destination->precedents = source->precedents ;
+	destination->successors = source->successors ;
+	destination->predecessors = source->predecessors ;
 	destination->nbRoutes = source->nbRoutes ;
 	destination->maxRoute = source->maxRoute ;
 	destination->potentiels = source->potentiels ;
@@ -150,7 +150,7 @@ void Individu::generalSplit()
 
 	isFitnessComputed = true ;
 	measureSol(); // calling a post-processing function which fills all other data structures and verifies the solution cost
-	computeSuivants (); // updating the predecessor and successor structure
+	computeSuccessorsAndPredecessors (); // updating the predecessor and successor structure
 }
 
 // Simple Split, does not necessarily respect the number of vehicles
@@ -366,9 +366,9 @@ void Individu::updateLS()
 	// we reinitialize the "ordreParcours" vector
 	localSearch->ordreParcours.clear() ; 
 
-	// we reset the "estPresent" values to false
+	// we reset the "isPresent" values to false
 	for (i=params->nbDepots ; i < params->nbClients + params->nbDepots ; i++)
-		localSearch->clients[i].estPresent = false ;
+		localSearch->clients[i].isPresent = false ;
 
 	// using Split results to load the solution in the LS structure
 	j = (int)chromT.size() ;
@@ -381,9 +381,9 @@ void Individu::updateLS()
 		myDepotFin = &localSearch->depotsFin[params->nombreVehicules - jj - 1];
 		myRoute = &localSearch->routes[params->nombreVehicules - jj - 1];
 
-		myDepot->suiv = myDepotFin ;
+		myDepot->successor = myDepotFin ;
 		myDepot->pred = myDepotFin ;
-		myDepotFin->suiv = myDepot ;
+		myDepotFin->successor = myDepot ;
 		myDepotFin->pred = myDepot ;
 
 		// a single visit
@@ -391,11 +391,11 @@ void Individu::updateLS()
 		{
 			myClient = &localSearch->clients[chromT[i]] ;
 			myClient->pred = myDepot ;
-			myClient->suiv = myDepotFin ;
+			myClient->successor = myDepotFin ;
 			myClient->route = myRoute ;
-			myClient->estPresent = true ;
+			myClient->isPresent = true ;
 			localSearch->nodeTestedForEachRoute(myClient->customer_or_depot_idx);
-			myDepot->suiv = myClient ;
+			myDepot->successor = myClient ;
 			myDepotFin->pred = myClient ;
 			localSearch->ordreParcours.push_back(myClient->customer_or_depot_idx);
 		}
@@ -404,19 +404,19 @@ void Individu::updateLS()
 			// at least two visits
 			myClient = &localSearch->clients[chromT[i]] ;
 			myClient->pred = myDepot ;
-			myClient->suiv = &localSearch->clients[chromT[i+1]] ;
+			myClient->successor = &localSearch->clients[chromT[i+1]] ;
 			myClient->route = myRoute ;
-			myClient->estPresent = true ;
+			myClient->isPresent = true ;
 			localSearch->nodeTestedForEachRoute(myClient->customer_or_depot_idx);
-			myDepot->suiv = myClient ;
+			myDepot->successor = myClient ;
 			localSearch->ordreParcours.push_back(myClient->customer_or_depot_idx);
 
 			// information for the end of the route
 			myClient = &localSearch->clients[chromT[j-1]] ;
 			myClient->pred = &localSearch->clients[chromT[j-2]];
-			myClient->suiv = myDepotFin ;
+			myClient->successor = myDepotFin ;
 			myClient->route = myRoute ;
-			myClient->estPresent = true ;
+			myClient->isPresent = true ;
 			localSearch->nodeTestedForEachRoute(myClient->customer_or_depot_idx);
 			myDepotFin->pred = myClient ;
 			localSearch->ordreParcours.push_back(myClient->customer_or_depot_idx);
@@ -426,9 +426,9 @@ void Individu::updateLS()
 			{
 				myClient = &localSearch->clients[chromT[k]] ;
 				myClient->pred = &localSearch->clients[chromT[k-1]] ;
-				myClient->suiv = &localSearch->clients[chromT[k+1]] ;
+				myClient->successor = &localSearch->clients[chromT[k+1]] ;
 				myClient->route =  myRoute ;
-				myClient->estPresent = true ;
+				myClient->isPresent = true ;
 				localSearch->nodeTestedForEachRoute(myClient->customer_or_depot_idx);
 				localSearch->ordreParcours.push_back(myClient->customer_or_depot_idx);
 			}
@@ -459,11 +459,11 @@ void Individu::updateIndiv()
   pos = 0 ;
   for (int r=0 ; r < (int)ordreRoutes.size() ; r ++)
   {
-    node = ordreRoutes[r]->depot->suiv ;
-    while (!node->estUnDepot)
+    node = ordreRoutes[r]->depot->successor ;
+    while (!node->isDepot)
     {
       chromT[pos]= node->customer_or_depot_idx;
-      node = node->suiv ;
+      node = node->successor ;
       pos ++ ;
     }
   }
@@ -482,8 +482,8 @@ double Individu::distance(Individu * indiv2)
 	{
 		isIdentical = true;
 
-    if (( suivants[j] != indiv2->suivants[j] || precedents[j] != indiv2->precedents[j] )
-      && ( precedents[j] != indiv2->suivants[j] || suivants[j] != indiv2->precedents[j] ))
+    if (( successors[j] != indiv2->successors[j] || predecessors[j] != indiv2->predecessors[j] )
+      && ( predecessors[j] != indiv2->successors[j] || successors[j] != indiv2->predecessors[j] ))
       isIdentical = false ;
 
 		if (!isIdentical)
@@ -493,33 +493,33 @@ double Individu::distance(Individu * indiv2)
 	return ((double)note /(double)(2*params->nbClients)) ;
 }
 
-void Individu::computeSuivants ()
+void Individu::computeSuccessorsAndPredecessors ()
 {
 	int jj ;
 	for (int i=0 ; i< params->nbDepots + params->nbClients ; i++)
 	{
-    suivants[i] = -1 ;
-    precedents[i] = -1 ;
+    successors[i] = -1 ;
+    predecessors[i] = -1 ;
 	}
 
   if (chromT.size() != 0)
   {
     for (int i=0 ; i < (int)chromT.size()-1 ; i++)
-      suivants[chromT[i]] = chromT[i+1];
+      successors[chromT[i]] = chromT[i+1];
 
     for (int i=1 ; i < (int)chromT.size() ; i++)
-      precedents[chromT[i]] = chromT[i-1];
+      predecessors[chromT[i]] = chromT[i-1];
 
-    suivants[chromT[chromT.size()-1]] = params->ordreVehicules[0].depotNumber;
-    precedents[chromT[0]] = params->ordreVehicules[0].depotNumber;
+    successors[chromT[chromT.size()-1]] = params->ordreVehicules[0].depotNumber;
+    predecessors[chromT[0]] = params->ordreVehicules[0].depotNumber;
 
     // arranging those which are located at the beginning or end of a route
     for (int i=0 ; i < params->nombreVehicules ; i++)
     {
       jj = chromR[i] ;
-      precedents[chromT[jj]] = params->ordreVehicules[0].depotNumber;
+      predecessors[chromT[jj]] = params->ordreVehicules[0].depotNumber;
       if (jj != 0)
-        suivants[chromT[jj-1]] = params->ordreVehicules[0].depotNumber;
+        successors[chromT[jj-1]] = params->ordreVehicules[0].depotNumber;
     }
   }
 }

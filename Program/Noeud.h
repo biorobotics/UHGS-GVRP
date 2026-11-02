@@ -33,7 +33,7 @@ public :
 Params * params ;
 
 // is-it a depot
-bool estUnDepot ;
+bool isDepot ;
 
 // index of the depot or customer
 int customer_or_depot_idx ;
@@ -43,10 +43,10 @@ int place ;
 
 // is this customer used
 // (all customer nodes are created, but not necessarily inserted in the sequence)
-bool estPresent ;
+bool isPresent ;
 
 // next depot or client in the route
-Noeud * suiv ;
+Noeud * successor ;
 
 // previous depot or client in the route
 Noeud * pred ;
@@ -76,7 +76,7 @@ vector < int > moves ;
 Noeud(void);
 	
 // constructor 2
-Noeud(bool estUnDepot, int customer_or_depot_index, bool estPresent, Noeud * suiv , Noeud * pred, Route * route,Params * params);
+Noeud(bool isDepot, int customer_or_depot_index, bool isPresent, Noeud * successor , Noeud * pred, Route * route,Params * params);
 
 // destructor
 ~Noeud(void);

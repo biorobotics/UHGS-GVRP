@@ -20,8 +20,8 @@
 
 Noeud::Noeud(void) {}
 
-Noeud::Noeud(bool estUnDepot, int customer_or_depot_idx,bool estPresent, Noeud * suiv , Noeud * pred, Route * route,Params * params) 
-: params(params), estUnDepot(estUnDepot), customer_or_depot_idx(customer_or_depot_idx), estPresent(estPresent), suiv(suiv), pred(pred), route(route)
+Noeud::Noeud(bool isDepot, int customer_or_depot_idx,bool isPresent, Noeud * successor , Noeud * pred, Route * route,Params * params) 
+: params(params), isDepot(isDepot), customer_or_depot_idx(customer_or_depot_idx), isPresent(isPresent), successor(successor), pred(pred), route(route)
 {
 	place = -1 ;
 }
@@ -29,11 +29,11 @@ Noeud::Noeud(bool estUnDepot, int customer_or_depot_idx,bool estPresent, Noeud *
 Noeud::Noeud(Noeud const& copy)
 {
 	// Copy constructor
-	estUnDepot = copy.estUnDepot ;
+	isDepot = copy.isDepot ;
 	customer_or_depot_idx = copy.customer_or_depot_idx ;
 	place = copy.place ;
-	estPresent = copy.estPresent ;
-	suiv = copy.suiv ;
+	isPresent = copy.isPresent ;
+	successor = copy.successor ;
 	pred = copy.pred ;
 	route = copy.route ;
 	params = copy.params ;
@@ -43,11 +43,11 @@ Noeud::Noeud(Noeud const& copy)
 Noeud& Noeud::operator=(Noeud const& copy)
 {
 	// Copy constructor
-	estUnDepot = copy.estUnDepot ;
+	isDepot = copy.isDepot ;
 	customer_or_depot_idx = copy.customer_or_depot_idx ;
 	place = copy.place ;
-	estPresent = copy.estPresent ;
-	suiv = copy.suiv ;
+	isPresent = copy.isPresent ;
+	successor = copy.successor ;
 	pred = copy.pred ;
 	route = copy.route ;
 	params = copy.params ;

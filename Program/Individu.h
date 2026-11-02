@@ -114,18 +114,18 @@ public:
 	// chromR[j] -> route j, gives the index in the chromT of the first customer in this route
 	vector<int > chromR ;
 
-	// suivants[client] gives the next customer
+	// successors[client] gives the next customer
 	// Used to compute the Hamming distance between solutions
 	// if the customer does not exist, returns -1
-	vector<int> suivants ;
+	vector<int> successors ;
 
-	// suivants[client] gives the previous customer
+	// predecessors[client] gives the previous customer
 	// Used to compute the Hamming distance between solutions
 	// if the customer does not exist, returns -1
-	vector<int> precedents ;
+	vector<int> predecessors ;
 
-	// computing the suivants and precedents tables
-	void computeSuivants();
+	// computing the successors and predecessors tables
+	void computeSuccessorsAndPredecessors();
 
 	// working table for split (dynamic programming for Split)
 	vector < vector < CostSol >> potentiels ;

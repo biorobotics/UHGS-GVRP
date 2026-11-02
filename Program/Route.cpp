@@ -33,26 +33,26 @@ Route::~Route(void){}
 void Route::reverse ()
 {
 	// Reversing the order of the nodes in the sequence
-	if (!depot->suiv->estUnDepot)
+	if (!depot->successor->isDepot)
 	{
 		Noeud * temp ;
 		Noeud * myDepot = depot ;
 		Noeud * myDepotFin = depot->pred ;
-		Noeud * current = depot->suiv ;
+		Noeud * current = depot->successor ;
 
-		while ( !current->estUnDepot )
+		while ( !current->isDepot )
 		{
-			temp = current->suiv ;
-			current->suiv = current->pred ;
+			temp = current->successor ;
+			current->successor = current->pred ;
 			current->pred = temp ;
 			current = temp ;
 		}
 
-		temp = myDepot->suiv ;
-		myDepot->suiv = myDepotFin->pred ;
+		temp = myDepot->successor ;
+		myDepot->successor = myDepotFin->pred ;
 		myDepotFin->pred = temp ;
-		myDepot->suiv->pred = myDepot ;
-		myDepotFin->pred->suiv = myDepotFin ;
+		myDepot->successor->pred = myDepot ;
+		myDepotFin->pred->successor = myDepotFin ;
 	}
 }
 
@@ -69,10 +69,10 @@ void Route::updateRouteData (bool isForPrinting)
 	noeud->seqi_0->initialisation(noeud->customer_or_depot_idx,params,individu,false);
 
 	firstIt = true ;
-	while (!noeud->estUnDepot || firstIt)
+	while (!noeud->isDepot || firstIt)
 	{
 		firstIt = false ;
-		noeud = noeud->suiv ;
+		noeud = noeud->successor ;
 		nbNodes ++ ;
 		place ++ ;
 		noeud->place = place ;
@@ -89,12 +89,12 @@ void Route::updateRouteData (bool isForPrinting)
 	noeud->seqn_i->initialisation(noeud->customer_or_depot_idx,params,individu,false);
 
 	firstIt = true ;
-	while ( !noeud->estUnDepot || firstIt )
+	while ( !noeud->isDepot || firstIt )
 	{
 		firstIt = false ;
 		noeud = noeud->pred ;
-		noeud->seqi_n->concatOneBefore(noeud->suiv->seqi_n,noeud->customer_or_depot_idx,individu);
-		noeud->seqn_i->concatOneAfter(noeud->suiv->seqn_i,noeud->customer_or_depot_idx,individu);
+		noeud->seqi_n->concatOneBefore(noeud->successor->seqi_n,noeud->customer_or_depot_idx,individu);
+		noeud->seqn_i->concatOneAfter(noeud->successor->seqn_i,noeud->customer_or_depot_idx,individu);
 	}
 
 	// Computing the auxiliary data on any subsequence (i..j), using forward recursion
@@ -106,13 +106,13 @@ void Route::updateRouteData (bool isForPrinting)
 	for (int i=0 ; i <= depot->pred->place ; i++)
 	{
 		noeudi->seqi_j[0]->initialisation(noeudi->customer_or_depot_idx,params,individu,false);
-		noeudj = noeudi->suiv ;
+		noeudj = noeudi->successor ;
 		for (int j=1 ; j <= depot->pred->place - i && j < params->sizeSD ; j++)
 		{
 			noeudi->seqi_j[j]->concatOneAfter(noeudi->seqi_j[j-1],noeudj->customer_or_depot_idx,individu);
-			noeudj = noeudj->suiv ;
+			noeudj = noeudj->successor ;
 		}
-		noeudi = noeudi->suiv ;
+		noeudi = noeudi->successor ;
 	}
 
 	noeudi = depot->pred ;
@@ -122,7 +122,7 @@ void Route::updateRouteData (bool isForPrinting)
 		noeudj = noeudi->pred ;
 		for (int j=1 ; j <= depot->pred->place - i && j < params->sizeSD ; j++)
 		{
-			noeudj->seqj_i[j]->concatOneAfter(noeudj->suiv->seqj_i[j-1],noeudj->customer_or_depot_idx,individu);
+			noeudj->seqj_i[j]->concatOneAfter(noeudj->successor->seqj_i[j-1],noeudj->customer_or_depot_idx,individu);
 			noeudj = noeudj->pred ;
 		}
 		noeudi = noeudi->pred ;
