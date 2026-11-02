@@ -104,7 +104,7 @@ public:
 	// initially set to NULL
 	Route * routeVide ;
 	// setting the pointer
-	void setRouteVide();
+	void setEmptyRoute();
 
 	// Linked list of the customer (used to store the solution)
 	// there is a pointer for the successor and the predecessor, as well as for the route and pre-processed data structures

@@ -441,7 +441,7 @@ void Individu::updateLS()
 	
 
 	// and we preprocess the route vide structure
-  localSearch->setRouteVide();
+  localSearch->setEmptyRoute();
 }
 
 

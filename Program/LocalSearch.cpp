@@ -1222,11 +1222,11 @@ void LocalSearch::updateMoves ()
 
 void LocalSearch::setRouteVide()
 {
-	routeVide = NULL ;
+	emptyRoute = NULL ;
 	int route = 0 ;
-	while (routeVide == NULL && route < params->nbVehiculesPerDep )
+	while (emptyRoute == NULL && route < params->nbVehiculesPerDep )
 	{
-		if (depots[route].successor->isDepot) routeVide = depots[route].route ;
+		if (depots[route].successor->isDepot) emptyRoute = depots[route].route ;
 		route ++ ;
 	}
 }
@@ -1349,7 +1349,7 @@ LocalSearch::LocalSearch(Params * params,Individu * individu) : params (params),
 		shouldBeTested.push_back(vector<bool>(4));
 	}
 
-  routeVide = NULL;
+  emptyRoute = NULL;
 
 	for (int i=params->nbDepots ; i < params->nbDepots + params->nbClients ; i++)
 		shuffledDepotAndCustomerIndices.push_back(i);
