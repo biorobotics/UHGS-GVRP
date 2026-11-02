@@ -53,9 +53,9 @@ private:
 	Individu * individu ;
 
 	// Small pointers and variables which are used during the LS
-	ClusterInRoute * noeudU ;
+	ClusterInRoute * clusterU ;
 	ClusterInRoute * x ;
-    ClusterInRoute * noeudV ;
+    ClusterInRoute * clusterV ;
 	ClusterInRoute * y ;
 	Route * routeU ;
 	Route * routeV ;

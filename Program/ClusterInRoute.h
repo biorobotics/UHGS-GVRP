@@ -16,8 +16,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //  ---------------------------------------------------------------------- */
 
-#ifndef NOEUD_H
-#define NOEUD_H
+#ifndef CLUSTERINROUTE_H
+#define CLUSTERINROUTE_H
 
 #include <iostream>
 using namespace std;

@@ -63,69 +63,69 @@ void Route::updateRouteData (bool isForPrinting)
 	double nbNodes = 1 ;
 
 	// Computing the auxiliary data on any subsequence (0..i), using forward recursion
-	ClusterInRoute * noeud = depot ;
-	noeud->place = place ;
-	noeud->seq0_i->initialisation(noeud->cluster_idx,params,individu,isForPrinting);
-	noeud->seqi_0->initialisation(noeud->cluster_idx,params,individu,false);
+	ClusterInRoute * cluster = depot ;
+	cluster->place = place ;
+	cluster->seq0_i->initialisation(cluster->cluster_idx,params,individu,isForPrinting);
+	cluster->seqi_0->initialisation(cluster->cluster_idx,params,individu,false);
 
 	firstIt = true ;
-	while (!noeud->isDepot || firstIt)
+	while (!cluster->isDepot || firstIt)
 	{
 		firstIt = false ;
-		noeud = noeud->successor ;
+		cluster = cluster->successor ;
 		nbNodes ++ ;
 		place ++ ;
-		noeud->place = place ;
+		cluster->place = place ;
 		if (isForPrinting)
-			noeud->seq0_i->concatOneAfterWithPathTracking(noeud->pred->seq0_i,noeud->cluster_idx,individu);
+			cluster->seq0_i->concatOneAfterWithPathTracking(cluster->pred->seq0_i,cluster->cluster_idx,individu);
 		else
-			noeud->seq0_i->concatOneAfter(noeud->pred->seq0_i,noeud->cluster_idx,individu);
-		noeud->seqi_0->concatOneBefore(noeud->pred->seqi_0,noeud->cluster_idx,individu);
+			cluster->seq0_i->concatOneAfter(cluster->pred->seq0_i,cluster->cluster_idx,individu);
+		cluster->seqi_0->concatOneBefore(cluster->pred->seqi_0,cluster->cluster_idx,individu);
 	}
 
 	// Computing the auxiliary data on any subsequence (i..n), using backward recursion
-	noeud = depot->pred ;
-	noeud->seqi_n->initialisation(noeud->cluster_idx,params,individu,false);
-	noeud->seqn_i->initialisation(noeud->cluster_idx,params,individu,false);
+	cluster = depot->pred ;
+	cluster->seqi_n->initialisation(cluster->cluster_idx,params,individu,false);
+	cluster->seqn_i->initialisation(cluster->cluster_idx,params,individu,false);
 
 	firstIt = true ;
-	while ( !noeud->isDepot || firstIt )
+	while ( !cluster->isDepot || firstIt )
 	{
 		firstIt = false ;
-		noeud = noeud->pred ;
-		noeud->seqi_n->concatOneBefore(noeud->successor->seqi_n,noeud->cluster_idx,individu);
-		noeud->seqn_i->concatOneAfter(noeud->successor->seqn_i,noeud->cluster_idx,individu);
+		cluster = cluster->pred ;
+		cluster->seqi_n->concatOneBefore(cluster->successor->seqi_n,cluster->cluster_idx,individu);
+		cluster->seqn_i->concatOneAfter(cluster->successor->seqn_i,cluster->cluster_idx,individu);
 	}
 
 	// Computing the auxiliary data on any subsequence (i..j), using forward recursion
 	// To gain a bit of time, we limit this preprocessing to subsequences such that i..j does not contain more than "sizeSD" elements
 	// (More intelligent strategies could be used (e.g., the hierarchical approach of Irnich))
-	ClusterInRoute * noeudi ;
-	ClusterInRoute * noeudj ;
-	noeudi = depot ;
+	ClusterInRoute * clusteri ;
+	ClusterInRoute * clusterj ;
+	clusteri = depot ;
 	for (int i=0 ; i <= depot->pred->place ; i++)
 	{
-		noeudi->seqi_j[0]->initialisation(noeudi->cluster_idx,params,individu,false);
-		noeudj = noeudi->successor ;
+		clusteri->seqi_j[0]->initialisation(clusteri->cluster_idx,params,individu,false);
+		clusterj = clusteri->successor ;
 		for (int j=1 ; j <= depot->pred->place - i && j < params->sizeSD ; j++)
 		{
-			noeudi->seqi_j[j]->concatOneAfter(noeudi->seqi_j[j-1],noeudj->cluster_idx,individu);
-			noeudj = noeudj->successor ;
+			clusteri->seqi_j[j]->concatOneAfter(clusteri->seqi_j[j-1],clusterj->cluster_idx,individu);
+			clusterj = clusterj->successor ;
 		}
-		noeudi = noeudi->successor ;
+		clusteri = clusteri->successor ;
 	}
 
-	noeudi = depot->pred ;
+	clusteri = depot->pred ;
 	for (int i=0 ; i <= depot->pred->place ; i++)
 	{
-		noeudi->seqj_i[0]->initialisation(noeudi->cluster_idx,params,individu,false);
-		noeudj = noeudi->pred ;
+		clusteri->seqj_i[0]->initialisation(clusteri->cluster_idx,params,individu,false);
+		clusterj = clusteri->pred ;
 		for (int j=1 ; j <= depot->pred->place - i && j < params->sizeSD ; j++)
 		{
-			noeudj->seqj_i[j]->concatOneAfter(noeudj->successor->seqj_i[j-1],noeudj->cluster_idx,individu);
-			noeudj = noeudj->pred ;
+			clusterj->seqj_i[j]->concatOneAfter(clusterj->successor->seqj_i[j-1],clusterj->cluster_idx,individu);
+			clusterj = clusterj->pred ;
 		}
-		noeudi = noeudi->pred ;
+		clusteri = clusteri->pred ;
 	}
 
 	// Checking the route feasibility
