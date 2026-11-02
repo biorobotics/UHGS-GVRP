@@ -20,7 +20,7 @@
 
 Route::Route(void){}
 
-Route::Route(int cour, Noeud * depot, Vehicle * vehicle, Params * params, Individu * indiv) : params(params), individu(indiv), cour(cour), depot(depot), vehicle(vehicle) 
+Route::Route(int customer_or_depot_idx, Noeud * depot, Vehicle * vehicle, Params * params, Individu * indiv) : params(params), individu(indiv), customer_or_depot_idx(customer_or_depot_idx), depot(depot), vehicle(vehicle) 
 {
 	for (int i=0 ; i < params->nbClients + params->nbDepots ; i++ )
 	{
@@ -65,8 +65,8 @@ void Route::updateRouteData (bool isForPrinting)
 	// Computing the auxiliary data on any subsequence (0..i), using forward recursion
 	Noeud * noeud = depot ;
 	noeud->place = place ;
-	noeud->seq0_i->initialisation(noeud->cour,params,individu,isForPrinting);
-	noeud->seqi_0->initialisation(noeud->cour,params,individu,false);
+	noeud->seq0_i->initialisation(noeud->customer_or_depot_idx,params,individu,isForPrinting);
+	noeud->seqi_0->initialisation(noeud->customer_or_depot_idx,params,individu,false);
 
 	firstIt = true ;
 	while (!noeud->estUnDepot || firstIt)
@@ -77,24 +77,24 @@ void Route::updateRouteData (bool isForPrinting)
 		place ++ ;
 		noeud->place = place ;
 		if (isForPrinting)
-			noeud->seq0_i->concatOneAfterWithPathTracking(noeud->pred->seq0_i,noeud->cour,individu);
+			noeud->seq0_i->concatOneAfterWithPathTracking(noeud->pred->seq0_i,noeud->customer_or_depot_idx,individu);
 		else
-			noeud->seq0_i->concatOneAfter(noeud->pred->seq0_i,noeud->cour,individu);
-		noeud->seqi_0->concatOneBefore(noeud->pred->seqi_0,noeud->cour,individu);
+			noeud->seq0_i->concatOneAfter(noeud->pred->seq0_i,noeud->customer_or_depot_idx,individu);
+		noeud->seqi_0->concatOneBefore(noeud->pred->seqi_0,noeud->customer_or_depot_idx,individu);
 	}
 
 	// Computing the auxiliary data on any subsequence (i..n), using backward recursion
 	noeud = depot->pred ;
-	noeud->seqi_n->initialisation(noeud->cour,params,individu,false);
-	noeud->seqn_i->initialisation(noeud->cour,params,individu,false);
+	noeud->seqi_n->initialisation(noeud->customer_or_depot_idx,params,individu,false);
+	noeud->seqn_i->initialisation(noeud->customer_or_depot_idx,params,individu,false);
 
 	firstIt = true ;
 	while ( !noeud->estUnDepot || firstIt )
 	{
 		firstIt = false ;
 		noeud = noeud->pred ;
-		noeud->seqi_n->concatOneBefore(noeud->suiv->seqi_n,noeud->cour,individu);
-		noeud->seqn_i->concatOneAfter(noeud->suiv->seqn_i,noeud->cour,individu);
+		noeud->seqi_n->concatOneBefore(noeud->suiv->seqi_n,noeud->customer_or_depot_idx,individu);
+		noeud->seqn_i->concatOneAfter(noeud->suiv->seqn_i,noeud->customer_or_depot_idx,individu);
 	}
 
 	// Computing the auxiliary data on any subsequence (i..j), using forward recursion
@@ -105,11 +105,11 @@ void Route::updateRouteData (bool isForPrinting)
 	noeudi = depot ;
 	for (int i=0 ; i <= depot->pred->place ; i++)
 	{
-		noeudi->seqi_j[0]->initialisation(noeudi->cour,params,individu,false);
+		noeudi->seqi_j[0]->initialisation(noeudi->customer_or_depot_idx,params,individu,false);
 		noeudj = noeudi->suiv ;
 		for (int j=1 ; j <= depot->pred->place - i && j < params->sizeSD ; j++)
 		{
-			noeudi->seqi_j[j]->concatOneAfter(noeudi->seqi_j[j-1],noeudj->cour,individu);
+			noeudi->seqi_j[j]->concatOneAfter(noeudi->seqi_j[j-1],noeudj->customer_or_depot_idx,individu);
 			noeudj = noeudj->suiv ;
 		}
 		noeudi = noeudi->suiv ;
@@ -118,11 +118,11 @@ void Route::updateRouteData (bool isForPrinting)
 	noeudi = depot->pred ;
 	for (int i=0 ; i <= depot->pred->place ; i++)
 	{
-		noeudi->seqj_i[0]->initialisation(noeudi->cour,params,individu,false);
+		noeudi->seqj_i[0]->initialisation(noeudi->customer_or_depot_idx,params,individu,false);
 		noeudj = noeudi->pred ;
 		for (int j=1 ; j <= depot->pred->place - i && j < params->sizeSD ; j++)
 		{
-			noeudj->seqj_i[j]->concatOneAfter(noeudj->suiv->seqj_i[j-1],noeudj->cour,individu);
+			noeudj->seqj_i[j]->concatOneAfter(noeudj->suiv->seqj_i[j-1],noeudj->customer_or_depot_idx,individu);
 			noeudj = noeudj->pred ;
 		}
 		noeudi = noeudi->pred ;

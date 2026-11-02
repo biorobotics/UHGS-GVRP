@@ -147,7 +147,7 @@ public:
 	void calculateStructures () ;
 	
 	// shuffle the lists of closest customers
-	void shuffleProches () ;
+	void shuffleCloseCustomerLists () ;
 
   double cost_thresh;
 

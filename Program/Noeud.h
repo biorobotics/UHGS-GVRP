@@ -36,7 +36,7 @@ Params * params ;
 bool estUnDepot ;
 
 // index of the depot or customer
-int cour ;
+int customer_or_depot_idx ;
 
 // place in the route
 int place ;
@@ -76,7 +76,7 @@ vector < int > moves ;
 Noeud(void);
 	
 // constructor 2
-Noeud(bool estUnDepot, int cour, bool estPresent, Noeud * suiv , Noeud * pred, Route * route,Params * params);
+Noeud(bool estUnDepot, int customer_or_depot_index, bool estPresent, Noeud * suiv , Noeud * pred, Route * route,Params * params);
 
 // destructor
 ~Noeud(void);

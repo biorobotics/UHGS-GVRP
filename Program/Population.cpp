@@ -179,8 +179,8 @@ void Population::updateProximity (SubPop * pop, Individu * indiv)
 	{
 		if (pop->individus[k] != indiv) 
 		{
-			pop->individus[k]->addProche(indiv);
-			indiv->addProche(pop->individus[k]);
+			pop->individus[k]->addIndividualProximityInfo(indiv);
+			indiv->addIndividualProximityInfo(pop->individus[k]);
 		}
 	}
 }
@@ -298,7 +298,7 @@ void Population::removeIndividu(SubPop * pop, int p)
 
 	// Removing it from the proximity structures
 	for (int i=0 ; i < pop->nbIndiv ; i++ )
-		pop->individus[i]->removeProche(partant);
+		pop->individus[i]->removeIndividualProximityInfo(partant);
 
 	delete partant ;
 }
@@ -397,7 +397,7 @@ bool Population::solutionChecker( vector < vector < int  > > & allRoutes,  vecto
 	double routeCost ;
 	double maxRouteLength = 0 ;
 	double totalLoad ;
-	int cour ;
+	int customer_or_depot_idx ;
 
 	// Verification of the load constraints
   for (int r=0 ; r < (int)allRoutes.size() ; r++)
@@ -418,8 +418,8 @@ bool Population::solutionChecker( vector < vector < int  > > & allRoutes,  vecto
     totalLoad = 0 ;
     for (int i=0 ; i < (int)allRoutes[r].size(); i++ )
     {
-      cour = allRoutes[r][i] ;
-      totalLoad += params->cli[cour].demand;
+      customer_or_depot_idx = allRoutes[r][i] ;
+      totalLoad += params->cli[customer_or_depot_idx].demand;
     }
     if (totalLoad < 0)
     {

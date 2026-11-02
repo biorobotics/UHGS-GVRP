@@ -146,11 +146,11 @@ public:
 	double distance(Individu * indiv2);
 
 	// Individuals ranked by proximity in the population
-	list <proxData> plusProches ;
+	list <proxData> individualProximityInfo ;
 
-	// functions to manage the "plusProches" structure
-	void addProche(Individu * indiv) ;
-	void removeProche(Individu * indiv) ;
+	// functions to manage the "individualProximityInfo" structure
+	void addIndividualProximityInfo(Individu * indiv) ;
+	void removeIndividualProximityInfo(Individu * indiv) ;
 
 	// average distance with the n closest individuals
 	double avDistanceToClosest(int n) ;

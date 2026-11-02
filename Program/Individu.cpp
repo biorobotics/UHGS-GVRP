@@ -394,10 +394,10 @@ void Individu::updateLS()
 			myClient->suiv = myDepotFin ;
 			myClient->route = myRoute ;
 			myClient->estPresent = true ;
-			localSearch->nodeTestedForEachRoute(myClient->cour);
+			localSearch->nodeTestedForEachRoute(myClient->customer_or_depot_idx);
 			myDepot->suiv = myClient ;
 			myDepotFin->pred = myClient ;
-			localSearch->ordreParcours.push_back(myClient->cour);
+			localSearch->ordreParcours.push_back(myClient->customer_or_depot_idx);
 		}
 		else if (j > i+1)
 		{
@@ -407,9 +407,9 @@ void Individu::updateLS()
 			myClient->suiv = &localSearch->clients[chromT[i+1]] ;
 			myClient->route = myRoute ;
 			myClient->estPresent = true ;
-			localSearch->nodeTestedForEachRoute(myClient->cour);
+			localSearch->nodeTestedForEachRoute(myClient->customer_or_depot_idx);
 			myDepot->suiv = myClient ;
-			localSearch->ordreParcours.push_back(myClient->cour);
+			localSearch->ordreParcours.push_back(myClient->customer_or_depot_idx);
 
 			// information for the end of the route
 			myClient = &localSearch->clients[chromT[j-1]] ;
@@ -417,9 +417,9 @@ void Individu::updateLS()
 			myClient->suiv = myDepotFin ;
 			myClient->route = myRoute ;
 			myClient->estPresent = true ;
-			localSearch->nodeTestedForEachRoute(myClient->cour);
+			localSearch->nodeTestedForEachRoute(myClient->customer_or_depot_idx);
 			myDepotFin->pred = myClient ;
-			localSearch->ordreParcours.push_back(myClient->cour);
+			localSearch->ordreParcours.push_back(myClient->customer_or_depot_idx);
 
 			// and the middle
 			for ( int k = (int)i+1 ; k <= j-2 ; k++ )
@@ -429,8 +429,8 @@ void Individu::updateLS()
 				myClient->suiv = &localSearch->clients[chromT[k+1]] ;
 				myClient->route =  myRoute ;
 				myClient->estPresent = true ;
-				localSearch->nodeTestedForEachRoute(myClient->cour);
-				localSearch->ordreParcours.push_back(myClient->cour);
+				localSearch->nodeTestedForEachRoute(myClient->customer_or_depot_idx);
+				localSearch->ordreParcours.push_back(myClient->customer_or_depot_idx);
 			}
 		}
 		j = i ;
@@ -462,7 +462,7 @@ void Individu::updateIndiv()
     node = ordreRoutes[r]->depot->suiv ;
     while (!node->estUnDepot)
     {
-      chromT[pos]= node->cour;
+      chromT[pos]= node->customer_or_depot_idx;
       node = node->suiv ;
       pos ++ ;
     }
@@ -524,7 +524,7 @@ void Individu::computeSuivants ()
   }
 }
 
-void Individu::addProche(Individu * indiv)
+void Individu::addIndividualProximityInfo(Individu * indiv)
 {
 	// Adding an individual in the structure of proximity (diversity management procedures)
 	list<proxData>::iterator it ;
@@ -532,23 +532,23 @@ void Individu::addProche(Individu * indiv)
 	data.indiv = indiv ;
 	data.dist = distance(indiv);
 
-	if (plusProches.empty()) plusProches.push_back(data);
+	if (individualProximityInfo.empty()) individualProximityInfo.push_back(data);
 	else
 	{
-		it = plusProches.begin();
-		while ( it != plusProches.end() && it->dist < data.dist)
+		it = individualProximityInfo.begin();
+		while ( it != individualProximityInfo.end() && it->dist < data.dist)
 			++it ;
-		plusProches.insert(it,data);
+		individualProximityInfo.insert(it,data);
 	}
 }
 
-void Individu::removeProche(Individu * indiv)
+void Individu::removeIndividualProximityInfo(Individu * indiv)
 {
 	// Removing an individual in the structure of proximity (diversity management procedures)
-	list<proxData>::iterator last = plusProches.end();
-	for (list<proxData>::iterator first = plusProches.begin() ; first != last ; )
+	list<proxData>::iterator last = individualProximityInfo.end();
+	for (list<proxData>::iterator first = individualProximityInfo.begin() ; first != last ; )
 		if (first->indiv == indiv)
-			first = plusProches.erase(first) ;
+			first = individualProximityInfo.erase(first) ;
 		else
 			++first ;
 }
@@ -558,9 +558,9 @@ double Individu::avDistanceToClosest(int n)
 	// Computing the average distance with the close elements (diversity management)
 	double result = 0 ;
 	double compte = 0 ;
-	list<proxData>::iterator it = plusProches.begin();
+	list<proxData>::iterator it = individualProximityInfo.begin();
 
-	for (int i=0 ; i<n && it!= plusProches.end(); i++)
+	for (int i=0 ; i<n && it!= individualProximityInfo.end(); i++)
 	{
 		result += it->dist ;
 		compte += 1.0 ;

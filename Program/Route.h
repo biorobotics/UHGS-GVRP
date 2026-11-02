@@ -43,7 +43,7 @@ Individu * individu ;
 public:
 
 // Index of the route
-int cour ;
+int customer_or_depot_idx ;
 
 // Depot node associated to the route
 Noeud * depot ;
@@ -73,7 +73,7 @@ void testSeqDatas();
 
 Route(void);
 
-Route(int cour, Noeud * depot, Vehicle * vehicle, Params * params, Individu * indiv);
+Route(int customer_or_depot_idx, Noeud * depot, Vehicle * vehicle, Params * params, Individu * indiv);
 
 ~Route(void);
 };

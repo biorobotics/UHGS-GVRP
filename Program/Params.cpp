@@ -208,7 +208,7 @@ Params::~Params(void)
 	delete [] cli ;
 }
 
-void Params::shuffleProches () 
+void Params::shuffleCloseCustomerLists () 
 {
 	int temp,temp2 ;
 

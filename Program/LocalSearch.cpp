@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 void LocalSearch::runSearchTotal ()
 {
 	// Shuffling the order of move evaluations
-	params->shuffleProches();
+	params->shuffleCloseCustomerLists();
 	melangeParcours();
 	int nbMoves = 0 ;
 
@@ -82,10 +82,10 @@ int LocalSearch::mutation ()
 
 				// If we have not yet tested the moves involving the node U and the route of node V
 				// (This flag is reset to false as soon as there is a modification in the route)
-				if (!noeudV->route->nodeAndRouteTested[noeudU->cour])
+				if (!noeudV->route->nodeAndRouteTested[noeudU->customer_or_depot_idx])
 				{
 					y = noeudV->suiv ;
-					if (routeV->cour != routeU->cour)
+					if (routeV->customer_or_depot_idx != routeU->customer_or_depot_idx)
 					{
 						if (moveEffectue != 1)
 						{
@@ -127,12 +127,12 @@ int LocalSearch::mutation ()
 			routeV = noeudV->route ;
 			vehicleV = routeV->vehicle ;
 			y = noeudV->suiv ;
-			if (!noeudV->route->nodeAndRouteTested[noeudU->cour])
+			if (!noeudV->route->nodeAndRouteTested[noeudU->customer_or_depot_idx])
 			{
 				while (moveEffectue != 1 && !noeudV->estUnDepot)
 				{ 
 					// Testing 2-Opt between U and V (if the restriction of the granular search allows) 
-					if (params->isCorrelated[noeudU->pred->cour][noeudV->cour] || params->isCorrelated[noeudU->cour][noeudV->suiv->cour]) 
+					if (params->isCorrelated[noeudU->pred->customer_or_depot_idx][noeudV->customer_or_depot_idx] || params->isCorrelated[noeudU->customer_or_depot_idx][noeudV->suiv->customer_or_depot_idx]) 
 						moveEffectue = intraRoute2Opt ();
 					noeudV = noeudV->suiv ;
 					y = noeudV->suiv ;
@@ -145,7 +145,7 @@ int LocalSearch::mutation ()
 				noeudV = &depots[route] ;
 				routeV = noeudV->route ;
 				y = noeudV->suiv ;
-				if ( (!noeudV->route->nodeAndRouteTested[noeudU->cour]) && (!y->estUnDepot || !routeVideTestee))
+				if ( (!noeudV->route->nodeAndRouteTested[noeudU->customer_or_depot_idx]) && (!y->estUnDepot || !routeVideTestee))
 				{
 					if (y->estUnDepot) routeVideTestee = true ;
 					if (routeV != routeU)
@@ -155,18 +155,18 @@ int LocalSearch::mutation ()
 						y = noeudV->suiv ;
 
 						// Insertion after the depot, in a different route
-						if (gainWhenRemoving && (params->isCorrelated[noeudU->cour][noeudV->cour] || params->isCorrelated[noeudU->cour][y->cour]) && moveEffectue != 1 ) 
+						if (gainWhenRemoving && (params->isCorrelated[noeudU->customer_or_depot_idx][noeudV->customer_or_depot_idx] || params->isCorrelated[noeudU->customer_or_depot_idx][y->customer_or_depot_idx]) && moveEffectue != 1 ) 
 							moveEffectue = interRouteGeneralInsert();
 
 						noeudV = noeudV->route->depot ;
 						y = noeudV->suiv ;
 
 						// 2-Opt* after the depot
-						if (params->isCorrelated[noeudU->pred->cour][noeudV->cour] && moveEffectue != 1) 
+						if (params->isCorrelated[noeudU->pred->customer_or_depot_idx][noeudV->customer_or_depot_idx] && moveEffectue != 1) 
 							moveEffectue = interRoute2Opt ();
 
 						// 2-Opt* after the depot
-						if ((params->isCorrelated[x->cour][y->cour] || params->isCorrelated[y->cour][x->cour]) && moveEffectue != 1) 
+						if ((params->isCorrelated[x->customer_or_depot_idx][y->customer_or_depot_idx] || params->isCorrelated[y->customer_or_depot_idx][x->customer_or_depot_idx]) && moveEffectue != 1) 
 							moveEffectue = interRoute2OptInv ();
 
 						noeudV = tempNoeud ;
@@ -179,7 +179,7 @@ int LocalSearch::mutation ()
 						y = noeudV->suiv ;
 
 						// Insertion after the depot, in the same route
-						if ((params->isCorrelated[noeudU->cour][noeudV->cour] || params->isCorrelated[noeudU->cour][y->cour]) && moveEffectue != 1) 
+						if ((params->isCorrelated[noeudU->customer_or_depot_idx][noeudV->customer_or_depot_idx] || params->isCorrelated[noeudU->customer_or_depot_idx][y->customer_or_depot_idx]) && moveEffectue != 1) 
 							moveEffectue = intraRouteGeneralInsertDroite();
 
 						noeudV = tempNoeud ;
@@ -190,7 +190,7 @@ int LocalSearch::mutation ()
 
 			// Say that we have tested the node U with all routes
 			if (moveEffectue == 0)
-				nodeTestedForEachRoute(noeudU->cour);
+				nodeTestedForEachRoute(noeudU->customer_or_depot_idx);
 		}
 	}
 	return nbMoves ;
@@ -427,7 +427,7 @@ int LocalSearch::interRoute2Opt ()
 	double cost ;
 	SeqData * seq = noeudU->seq0_i ;
 
-	if  (routeU->depot->cour != routeV->depot->cour || (noeudU->pred->estUnDepot && noeudV->estUnDepot)) 
+	if  (routeU->depot->customer_or_depot_idx != routeV->depot->customer_or_depot_idx || (noeudU->pred->estUnDepot && noeudV->estUnDepot)) 
 		return 0 ; // Cannot do a 2-Opt* if the depot is placed in the wrong way
 
 	double costZero = routeU->currentRouteCost + routeV->currentRouteCost ; // Cost before the move
@@ -1265,7 +1265,7 @@ void LocalSearch::removeNoeud(Noeud * U)
 
 	// Managing the other data structures
 	individu->chromT.pop_back();
-	removeOP(U->cour);
+	removeOP(U->customer_or_depot_idx);
 	U->estPresent = false ;
 }
 
@@ -1285,7 +1285,7 @@ void LocalSearch::addNoeud(Noeud * U, Noeud * V)
 
 	// Manage the other data structures
 	individu->chromT.push_back(0);
-	addOP(U->cour);
+	addOP(U->customer_or_depot_idx);
 }
 
 void LocalSearch::removeOP (int client) 
@@ -1319,7 +1319,7 @@ void LocalSearch::reinitMoves(Route * r)
 
 	for (Noeud * tempNoeud = r->depot->suiv ; !tempNoeud->estUnDepot ; tempNoeud = tempNoeud->suiv)
 		for (int route = 0 ; route < params->nbVehiculesPerDep ; route ++)
-			depots[route].route->nodeAndRouteTested[tempNoeud->cour] = false ;
+			depots[route].route->nodeAndRouteTested[tempNoeud->customer_or_depot_idx] = false ;
 }
 
 void LocalSearch::reinitAllMoves()
@@ -1331,34 +1331,34 @@ void LocalSearch::reinitAllMoves()
 
 void LocalSearch::addSeqDataInPieces (Noeud * node, int length)
 {
-	Noeud * cour = node ;
-	SeqData * courSeq ;
-	int courLenght = length + 1 ;
+	Noeud * curNode = node ;
+	SeqData * curSeq ;
+	int curLength = length + 1 ;
 	int temp ;
-	while (courLenght > 0)
+	while (curLength > 0)
 	{
-		temp = min(courLenght,params->sizeSD) ;
-		courSeq = cour->seqi_j[temp-1];
-		myseqs.push_back(courSeq);
-		courLenght -= temp ;
-		if (courLenght != 0) cour = clients[courSeq->lastNode].suiv ;
+		temp = min(curLength,params->sizeSD) ;
+		curSeq = curNode->seqi_j[temp-1];
+		myseqs.push_back(curSeq);
+		curLength -= temp ;
+		if (curLength != 0) curNode = clients[curSeq->lastNode].suiv ;
 	}
 }
 
 void LocalSearch::addReverseSeqDataInPieces (Noeud * node, int length)
 {
-	Noeud * cour = node ;
-	SeqData * courSeq ;
+	Noeud * curNode = node ;
+	SeqData * curSeq ;
 	list <SeqData*> myseqTemp ;
-	int courLenght = length + 1 ;
+	int curLength = length + 1 ;
 	int temp ;
-	while (courLenght > 0)
+	while (curLength > 0)
 	{
-		temp = min(courLenght,params->sizeSD) ;
-		courSeq = cour->seqj_i[temp-1];
-		myseqTemp.push_back(courSeq);
-		courLenght -= temp ;
-		if (courLenght != 0) cour = clients[courSeq->firstNode].suiv ;
+		temp = min(curLength,params->sizeSD) ;
+		curSeq = curNode->seqj_i[temp-1];
+		myseqTemp.push_back(curSeq);
+		curLength -= temp ;
+		if (curLength != 0) curNode = clients[curSeq->firstNode].suiv ;
 	}
 
 	for ( list<SeqData*>::reverse_iterator it=myseqTemp.rbegin() ; it != myseqTemp.rend() ; it++)
@@ -1424,7 +1424,7 @@ LocalSearch::LocalSearch(Params * params,Individu * individu) : params (params),
 	for (int i=0 ; i < params->nbClients + params->nbDepots ; i++) 
 	{
 		for (int ii=nbSeqsSet ; ii < nbSeqsSet+4+params->sizeSD+params->sizeSD ; ii++)
-			myseqDatas[ii].initialisation(clients[i].cour,params,individu,false);  
+			myseqDatas[ii].initialisation(clients[i].customer_or_depot_idx,params,individu,false);  
 
 		clients[i].seq0_i = &myseqDatas[nbSeqsSet] ;
 		clients[i].seqi_n = &myseqDatas[nbSeqsSet+1] ;
@@ -1441,7 +1441,7 @@ LocalSearch::LocalSearch(Params * params,Individu * individu) : params (params),
 	for (int i=0 ; i < params->nbVehiculesPerDep  ; i++) 
 	{
 		for (int ii=nbSeqsSet ; ii < nbSeqsSet+4+params->sizeSD+params->sizeSD ; ii++)
-			myseqDatas[ii].initialisation(depots[i].cour,params,individu,false);
+			myseqDatas[ii].initialisation(depots[i].customer_or_depot_idx,params,individu,false);
 
 		depots[i].seq0_i = &myseqDatas[nbSeqsSet] ;
 		depots[i].seqi_n = &myseqDatas[nbSeqsSet+1] ;
@@ -1458,7 +1458,7 @@ LocalSearch::LocalSearch(Params * params,Individu * individu) : params (params),
 	for (int i=0 ; i < params->nbVehiculesPerDep ; i++) 
 	{
 		for (int ii=nbSeqsSet ; ii < nbSeqsSet+4+params->sizeSD+params->sizeSD ; ii++)
-			myseqDatas[ii].initialisation(depotsFin[i].cour,params,individu,false);
+			myseqDatas[ii].initialisation(depotsFin[i].customer_or_depot_idx,params,individu,false);
 
 		depotsFin[i].seq0_i = &myseqDatas[nbSeqsSet] ;
 		depotsFin[i].seqi_n = &myseqDatas[nbSeqsSet+1] ;
