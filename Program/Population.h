@@ -48,7 +48,8 @@ class Population
    // List to remember which of the 50 previous individuals were feasible in terms of max travel time
    list <bool> listeValiditeTemps ;
 
-   // Place an individual in the population
+   // Place an individual in the population, such that the population
+   // remains sorted by penalized cost (i.e. the coutSol.evaluation value)
    // Returns its position
    int placeIndividu (SousPop * pop, Individu * indiv);
 
