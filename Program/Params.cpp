@@ -125,6 +125,10 @@ Params::Params(unsigned int seedRNG, int nbVeh, double vc, const Ref<const Vecto
 	// Setting the other instance parameters
 	nbClients = num_clusters;
 
+  if (num_clusters > 120) {
+    throw std::runtime_error("Problem has more than 120 customers. UHGS used decomposition on such instances but we did not implement this.");
+  }
+
 	// Building the list of vehicles
   nombreVehicules = nbDepots*nbVehiculesPerDep;
   for (int i=0 ; i < nbDepots ; i++)
