@@ -58,10 +58,13 @@ void LocalSearch::apply_move(int ibest, int jbest, bool reverseRouteU, bool reve
   noeudU = Ubest;
   routeU = noeudU->route ;
   vehicleU = routeU->vehicle ;
+  x = noeudU->suiv ;
 
   noeudV = Vbest;
   routeV = noeudV->route ;
   vehicleV = routeV->vehicle ;
+  y = noeudV->suiv ;
+
   if (best_move_type == MoveType::InterRouteGeneralInsert) {
     applyInterRouteGeneralInsertMove(ibest, jbest);
   } else if (best_move_type == MoveType::InterRoute2Opt) {
@@ -103,6 +106,7 @@ int LocalSearch::mutationSameDay (int day)
 	// We search and apply moves until a local minimum is attained
 	while (!rechercheTerminee)
 	{
+    // std::cout << "getting number of moves" << std::endl;
     int size2 ;
     int num_possible_moves = 0;
     // For every node U in random order
@@ -195,6 +199,7 @@ int LocalSearch::mutationSameDay (int day)
 				}
 			}
     }
+    // std::cout << "got number of moves" << std::endl;
 
 		rechercheTerminee = true ;
 		moveEffectue = 0 ;
@@ -238,6 +243,7 @@ int LocalSearch::mutationSameDay (int day)
 							tempNoeud = noeudV ;
 							noeudV = noeudV->suiv ;
 							y = noeudV->suiv ;
+              // std::cout << "trying inter-route general insert" << std::endl;
 							// Testing Relocate, Swap, CROSS and I-CROSS (limited to 2 customers) of nodeU and nodeV 
 							// Case where they are in different routes
 							if (gainWhenRemoving) {
@@ -255,10 +261,12 @@ int LocalSearch::mutationSameDay (int day)
               } 
 							noeudV = tempNoeud ;
 							y = noeudV->suiv ;
+              // std::cout << "done inter-route general insert" << std::endl;
 						}
 
 						// 2-Opt*
 						if (moveEffectue != 1) {
+              // std::cout << "trying inter-route 2opt" << std::endl;
 							double cost_delta = interRoute2Opt ();
               if (cost_delta < best_cost_delta) {
                 best_cost_delta = cost_delta;
@@ -266,10 +274,12 @@ int LocalSearch::mutationSameDay (int day)
                 Vbest = noeudV;
                 best_move_type = MoveType::InterRoute2Opt;
               }
+              // std::cout << "done inter-route 2opt" << std::endl;
             }
 
 						// 2-Opt* (second type, where the routes can be reversed)
 						if (moveEffectue != 1) {
+              // std::cout << "trying inter-route 2optinv" << std::endl;
               bool cand_reverseRouteU;
               bool cand_reverseRouteV;
 							double cost_delta = interRoute2OptInv (cand_reverseRouteU, cand_reverseRouteV);
@@ -281,6 +291,7 @@ int LocalSearch::mutationSameDay (int day)
                 Vbest = noeudV;
                 best_move_type = MoveType::InterRoute2OptInv;
               }
+              // std::cout << "done inter-route 2optinv" << std::endl;
             }
 					}
 					else
@@ -292,6 +303,7 @@ int LocalSearch::mutationSameDay (int day)
 						// Testing Relocate, Swap, CROSS and I-CROSS (limited to 2 customers) of nodeU and nodeV 
 						// Case where they are in the same route
 						if (moveEffectue != 1 && gainWhenRemoving) {
+              // std::cout << "trying intra route general insert" << std::endl;
               int cand_ibest;
               int cand_jbest;
 							double cost_delta = intraRouteGeneralInsertDroite(ibest, jbest);
@@ -304,6 +316,7 @@ int LocalSearch::mutationSameDay (int day)
                 Vbest = noeudV;
                 best_move_type = MoveType::IntraRouteGeneralInsert;
               }
+              // std::cout << "done intra route general insert" << std::endl;
             }
 						noeudV = tempNoeud ;
 						y = noeudV->suiv ;
@@ -311,10 +324,14 @@ int LocalSearch::mutationSameDay (int day)
 				}
         ++num_moves_since_last_acceptance;
         if (num_moves_since_last_acceptance >= 0.05*num_possible_moves && best_cost_delta < 0) {
+          // std::cout << "applying move" << std::endl;
           apply_move(ibest, jbest, reverseRouteU, reverseRouteV, Ubest, Vbest, best_move_type);
           moveEffectue = 1;
+          num_moves_since_last_acceptance = 0;
+          // std::cout << "done applying move" << std::endl;
         }
 			}
+      // std::cout << "here1" << std::endl;
 
 			noeudV = noeudU->suiv ;
 			routeV = noeudV->route ;
@@ -322,10 +339,12 @@ int LocalSearch::mutationSameDay (int day)
 			y = noeudV->suiv ;
 			if (!noeudV->route->nodeAndRouteTested[noeudU->cour])
 			{
+        // std::cout << "here2" << std::endl;
 				while (moveEffectue != 1 && !noeudV->estUnDepot)
 				{ 
 					// Testing 2-Opt between U and V (if the restriction of the granular search allows) 
 					if (params->isCorrelated[noeudU->pred->cour][noeudV->cour] || params->isCorrelated[noeudU->cour][noeudV->suiv->cour]) {
+            // std::cout << "trying intra route 2opt" << std::endl;
 						double cost_delta = intraRoute2Opt ();
 
             if (cost_delta < best_cost_delta) {
@@ -334,16 +353,21 @@ int LocalSearch::mutationSameDay (int day)
               Vbest = noeudV;
               best_move_type = MoveType::IntraRoute2Opt;
             }
+            // std::cout << "done trying intra route 2opt" << std::endl;
             ++num_moves_since_last_acceptance;
             if (num_moves_since_last_acceptance >= 0.05*num_possible_moves && best_cost_delta < 0) {
+              // std::cout << "applying move" << std::endl;
               apply_move(ibest, jbest, reverseRouteU, reverseRouteV, Ubest, Vbest, best_move_type);
               moveEffectue = 1;
+              num_moves_since_last_acceptance = 0;
+              // std::cout << "done applying move" << std::endl;
             }
           }
 					noeudV = noeudV->suiv ;
 					y = noeudV->suiv ;
 				}
 			}
+      // std::cout << "here3" << std::endl;
 
 			// Special cases : testing the insertions behind the depot, and the empty routes
 			for (int route = 0 ; route < params->nbVehiculesPerDep && moveEffectue == 0 ; route ++)
@@ -362,6 +386,7 @@ int LocalSearch::mutationSameDay (int day)
 
 						// Insertion after the depot, in a different route
 						if (gainWhenRemoving && (params->isCorrelated[noeudU->cour][noeudV->cour] || params->isCorrelated[noeudU->cour][y->cour]) && moveEffectue != 1 ) {
+              // std::cout << "trying special case" << std::endl;
               int cand_ibest;
               int cand_jbest;
 							double cost_delta = interRouteGeneralInsert(ibest, jbest);
@@ -374,10 +399,14 @@ int LocalSearch::mutationSameDay (int day)
                 Vbest = noeudV;
                 best_move_type = MoveType::InterRouteGeneralInsert;
               }
+              // std::cout << "done trying special case" << std::endl;
               ++num_moves_since_last_acceptance;
               if (num_moves_since_last_acceptance >= 0.05*num_possible_moves && best_cost_delta < 0) {
+                // std::cout << "applying move" << std::endl;
                 apply_move(ibest, jbest, reverseRouteU, reverseRouteV, Ubest, Vbest, best_move_type);
                 moveEffectue = 1;
+                num_moves_since_last_acceptance = 0;
+                // std::cout << "done applying move" << std::endl;
               }
             }
 
@@ -386,6 +415,7 @@ int LocalSearch::mutationSameDay (int day)
 
 						// 2-Opt* after the depot
 						if (params->isCorrelated[noeudU->pred->cour][noeudV->cour] && moveEffectue != 1) {
+              // std::cout << "trying 2opt* after depot" << std::endl;
 							double cost_delta = interRoute2Opt ();
               if (cost_delta < best_cost_delta) {
                 best_cost_delta = cost_delta;
@@ -393,15 +423,20 @@ int LocalSearch::mutationSameDay (int day)
                 Vbest = noeudV;
                 best_move_type = MoveType::InterRoute2Opt;
               }
+              // std::cout << "done trying 2opt* after depot" << std::endl;
               ++num_moves_since_last_acceptance;
               if (num_moves_since_last_acceptance >= 0.05*num_possible_moves && best_cost_delta < 0) {
+                // std::cout << "applying move" << std::endl;
                 apply_move(ibest, jbest, reverseRouteU, reverseRouteV, Ubest, Vbest, best_move_type);
                 moveEffectue = 1;
+                num_moves_since_last_acceptance = 0;
+                // std::cout << "done applying move" << std::endl;
               }
             }
 
 						// 2-Opt* after the depot
 						if ((params->isCorrelated[x->cour][y->cour] || params->isCorrelated[y->cour][x->cour]) && moveEffectue != 1) {
+              // std::cout << "trying 2opt* after depot with reversal" << std::endl;
               bool cand_reverseRouteU;
               bool cand_reverseRouteV;
 							double cost_delta = interRoute2OptInv (cand_reverseRouteU, cand_reverseRouteV);
@@ -414,10 +449,14 @@ int LocalSearch::mutationSameDay (int day)
                 Vbest = noeudV;
                 best_move_type = MoveType::InterRoute2OptInv;
               }
+              // std::cout << "done trying 2opt* after depot" << std::endl;
               ++num_moves_since_last_acceptance;
               if (num_moves_since_last_acceptance >= 0.05*num_possible_moves && best_cost_delta < 0) {
+                // std::cout << "applying move" << std::endl;
                 apply_move(ibest, jbest, reverseRouteU, reverseRouteV, Ubest, Vbest, best_move_type);
                 moveEffectue = 1;
+                num_moves_since_last_acceptance = 0;
+                // std::cout << "done applying move" << std::endl;
               }
             }
 
@@ -432,6 +471,7 @@ int LocalSearch::mutationSameDay (int day)
 
 						// Insertion after the depot, in the same route
 						if ((params->isCorrelated[noeudU->cour][noeudV->cour] || params->isCorrelated[noeudU->cour][y->cour]) && moveEffectue != 1) {
+              // std::cout << "trying inttra route insert after depot in same route" << std::endl;
               int cand_ibest;
               int cand_jbest;
 							double cost_delta = intraRouteGeneralInsertDroite(cand_ibest, cand_jbest);
@@ -444,10 +484,14 @@ int LocalSearch::mutationSameDay (int day)
                 Vbest = noeudV;
                 best_move_type = MoveType::IntraRouteGeneralInsert;
               }
+              // std::cout << "done trying intra route insert after depot in same route" << std::endl;
               ++num_moves_since_last_acceptance;
               if (num_moves_since_last_acceptance >= 0.05*num_possible_moves && best_cost_delta < 0) {
+                // std::cout << "applying move" << std::endl;
                 apply_move(ibest, jbest, reverseRouteU, reverseRouteV, Ubest, Vbest, best_move_type);
                 moveEffectue = 1;
+                num_moves_since_last_acceptance = 0;
+                // std::cout << "done applying move" << std::endl;
               }
             }
 
@@ -1384,13 +1428,14 @@ double LocalSearch::intraRouteGeneralInsertDroite (int &ibest, int &jbest)
 		}
 	}
 
+  noeudU = tempU ;
+  noeudV = tempV ;
+  x = noeudU->suiv ;
+  y = noeudV->suiv ;
+
 	// No improving move has been found
 	if ( ibest == 0 && jbest == 0 ) 
 	{ 
-		noeudU = tempU ;
-		noeudV = tempV ;
-		x = noeudU->suiv ;
-		y = noeudV->suiv ;
 		return 0 ;
 	}
 
