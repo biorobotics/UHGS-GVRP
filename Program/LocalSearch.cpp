@@ -465,6 +465,30 @@ int LocalSearch::mutationSameDay (int day)
 	return nbMoves ;
 }
 
+int LocalSearch::mutationDifferentDay ()
+{
+       // Local Search to improve the pattern choices for customers (PCARP and MDCARP)
+       // Only a single move, which is a relocate of all occurences of a customer in the best combination of days
+       // This move is still used for problems with a single period, in this case it only does a relocate without granular search restriction
+       rechercheTerminee = false ;
+       int nbMoves = 0 ;
+       firstLoop = true ;
+
+       for (int day = 1 ; day <= params->nbDays ; day++)
+               for (int r=0 ; r < params->nombreVehicules[day] ; r++)
+                       routes[day][r].initiateInsertions() ;
+
+       while ( !rechercheTerminee )
+       {
+               rechercheTerminee = true ;
+               // Searching for a better insertion place for all customers
+               for ( int posU = 0 ; posU < params->nbClients ; posU ++ )
+                       nbMoves += searchBetterPattern(ordreParcours[0][posU]);
+               firstLoop = false ;
+       }
+       return nbMoves ;
+}
+
 double LocalSearch::interRouteGeneralInsert(int &ibest, int &jbest)
 {
 	// For a pair of nodes U, V, tests together the Relocate, Swap, and variants of CROSS and I-CROSS limited to two consecutive nodes.
