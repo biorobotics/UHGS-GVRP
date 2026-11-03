@@ -191,7 +191,6 @@ Params::Params(unsigned int seedRNG, int nbVeh, double vc, const Ref<const Vecto
 	/* THEN READ THE CHARACTERISTICS OF THE NODE SERVICES */
 	for (int i=1 ; i <= num_clusters; i++)
 	{
-    cli[i].ar_nodesExtr0 = i ;
     cli[i].demand = demand_per_cluster[i] ;
     totalDemand += cli[i].demand ;
 	}

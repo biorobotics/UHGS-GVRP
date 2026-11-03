@@ -81,13 +81,6 @@ class Client
 	// type of service
 	ClientType ar_nodeType ;
 
-	// if the client type is an edge, we store the begin and end node.
-	// if its a node, the start and end are the same
-	// start node is nodesExtr[0], 
-	// end node is nodesExtr[1]
-	int ar_nodesExtr0 ;
-	int ar_nodesExtr1 ;
-
 	// For NEARP with turn penalties, the number of modes is defined (1 for a service on an arc, 2 for an edge, more for a node in the presence of turn penalties)
 	int ar_nbNodes ;
 	vector <int> ar_Nodes ;
