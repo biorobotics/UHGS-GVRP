@@ -328,6 +328,8 @@ int LocalSearch::mutationSameDay (int day)
           apply_move(ibest, jbest, reverseRouteU, reverseRouteV, Ubest, Vbest, best_move_type);
           moveEffectue = 1;
           num_moves_since_last_acceptance = 0;
+          best_move_type = MoveType::None;
+          best_cost_delta = 0.;
           // std::cout << "done applying move" << std::endl;
         }
 			}
@@ -360,6 +362,8 @@ int LocalSearch::mutationSameDay (int day)
               apply_move(ibest, jbest, reverseRouteU, reverseRouteV, Ubest, Vbest, best_move_type);
               moveEffectue = 1;
               num_moves_since_last_acceptance = 0;
+              best_move_type = MoveType::None;
+              best_cost_delta = 0.;
               // std::cout << "done applying move" << std::endl;
             }
           }
@@ -406,6 +410,8 @@ int LocalSearch::mutationSameDay (int day)
                 apply_move(ibest, jbest, reverseRouteU, reverseRouteV, Ubest, Vbest, best_move_type);
                 moveEffectue = 1;
                 num_moves_since_last_acceptance = 0;
+                best_move_type = MoveType::None;
+                best_cost_delta = 0.;
                 // std::cout << "done applying move" << std::endl;
               }
             }
@@ -430,6 +436,8 @@ int LocalSearch::mutationSameDay (int day)
                 apply_move(ibest, jbest, reverseRouteU, reverseRouteV, Ubest, Vbest, best_move_type);
                 moveEffectue = 1;
                 num_moves_since_last_acceptance = 0;
+                best_move_type = MoveType::None;
+                best_cost_delta = 0.;
                 // std::cout << "done applying move" << std::endl;
               }
             }
@@ -456,6 +464,8 @@ int LocalSearch::mutationSameDay (int day)
                 apply_move(ibest, jbest, reverseRouteU, reverseRouteV, Ubest, Vbest, best_move_type);
                 moveEffectue = 1;
                 num_moves_since_last_acceptance = 0;
+                best_move_type = MoveType::None;
+                best_cost_delta = 0.;
                 // std::cout << "done applying move" << std::endl;
               }
             }
@@ -491,6 +501,8 @@ int LocalSearch::mutationSameDay (int day)
                 apply_move(ibest, jbest, reverseRouteU, reverseRouteV, Ubest, Vbest, best_move_type);
                 moveEffectue = 1;
                 num_moves_since_last_acceptance = 0;
+                best_move_type = MoveType::None;
+                best_cost_delta = 0.;
                 // std::cout << "done applying move" << std::endl;
               }
             }
@@ -735,7 +747,7 @@ double LocalSearch::interRouteGeneralInsert(int &ibest, int &jbest)
 }
 
 
-// noeudV and noeudU and routeV and routeU must be set appropriately beforehand
+// noeudV and noeudU and routeV and routeU and x and y must be set appropriately beforehand
 void LocalSearch::applyInterRouteGeneralInsertMove(int ibest, int jbest) {
 	Noeud * placeV = noeudV->pred ;
 	Noeud * placeU = noeudU->pred ;
@@ -773,18 +785,20 @@ double LocalSearch::interRoute2Opt ()
 
 	// Lower bound on the move value
 	cost = seq->evaluationLB(noeudU->pred->seq0_i,y->seqi_n,routeU->vehicle) + seq->evaluationLB(noeudV->seq0_i,noeudU->seqi_n,routeV->vehicle) - costZero ;
+
 	if ( cost  > -EPSILON_LS ) 
 		return 0 ; // Exit if no chance of improvement
 
 	// Exact move evaluation
 	cost = seq->evaluation(noeudU->pred->seq0_i,y->seqi_n,routeU->vehicle) + seq->evaluation(noeudV->seq0_i,noeudU->seqi_n,routeV->vehicle) - costZero ;
+
 	if ( cost  > -EPSILON_LS ) 
 		return 0 ; 
 
   return cost;
 }
 
-// noeudV and noeudU and routeV and routeU must be set appropriately beforehand
+// noeudV and noeudU and routeV and routeU and y must be set appropriately beforehand
 void LocalSearch::applyInterRoute2OptMove() {
 	reinitSingleDayMoves(routeU);  // Say that all moves involving this route must be tested again
 	reinitSingleDayMoves(routeV);  // Say that all moves involving this route must be tested again
@@ -889,7 +903,7 @@ double LocalSearch::interRoute2OptInv(bool &reverseRouteU, bool &reverseRouteV)
   return cost;
 }
 
-// noeudV and noeudU and routeV and routeU must be set appropriately beforehand
+// noeudV and noeudU and routeV and routeU and x and y must be set appropriately beforehand
 void LocalSearch::applyInterRoute2OptInvMove(bool reverseRouteU, bool reverseRouteV) {
 	reinitSingleDayMoves(noeudU->route);  // Say that all moves involving this route must be tested again
 	reinitSingleDayMoves(noeudV->route);  // Say that all moves involving this route must be tested again
@@ -990,8 +1004,6 @@ double LocalSearch::intraRouteGeneralInsertDroite (int &ibest, int &jbest)
 	double moveMin ;
 	SeqData * seq = noeudU->seq0_i ;
 	Noeud * Upred = noeudU->pred ;
-	Noeud * placeU = noeudU->pred ;
-	Noeud * placeV = noeudV->pred ;
 	Noeud * xsuiv = x->suiv ;
 	Noeud * ysuiv = y->suiv ;
 	double costZero = routeU->currentRouteCost ;
@@ -1442,7 +1454,7 @@ double LocalSearch::intraRouteGeneralInsertDroite (int &ibest, int &jbest)
   return moveMin;
 }
 
-// noeudV and noeudU and routeV and routeU must be set appropriately beforehand
+// noeudV and noeudU and routeV and routeU and x and y must be set appropriately beforehand
 void LocalSearch::applyIntraRouteGeneralInsertDroiteMove(int ibest, int jbest) {
 	///////////////////////////////////////////
 	// HERE STARTS THE MOVE APPLICATION PROCESS
@@ -1523,18 +1535,20 @@ double LocalSearch::intraRoute2Opt ()
 
 	// Compute the lower bound on move value and exits if no possible improvement
 	cost = seq->evaluationLB(myseqs,routeU->vehicle) ;
+
 	if (cost - costZero  > -EPSILON_LS)  
 		return 0 ;
 
 	// Compute the real move value
 	cost = seq->evaluation(myseqs,routeU->vehicle) ;
+
 	if (cost - costZero  > -EPSILON_LS)  
 		return 0 ;
 
   return cost - costZero;
 }
 
-// noeudV and noeudU and routeV and routeU must be set appropriately beforehand
+// noeudV and noeudU and routeV and routeU and x and y must be set appropriately beforehand
 void LocalSearch::applyIntraRoute2OptMove() {
 	Noeud * nodeNum = noeudU->suiv ;
 	Noeud * nodeUpred = noeudU->pred ;
