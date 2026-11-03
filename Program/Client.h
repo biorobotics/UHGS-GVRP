@@ -81,7 +81,6 @@ class Client
 	// type of service
 	ClientType ar_nodeType ;
 
-	// For NEARP with turn penalties, the number of modes is defined (1 for a service on an arc, 2 for an edge, more for a node in the presence of turn penalties)
 	int ar_nbNodes ;
 	vector <int> ar_Nodes ;
 
