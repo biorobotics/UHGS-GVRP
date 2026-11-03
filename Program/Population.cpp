@@ -793,6 +793,15 @@ void Population::education(Individu * indiv)
 	indiv->recopieIndividu(indiv,trainer);
 }
 
+void Population::prepare_to_get_solution(Individu * indiv)
+{	
+	indiv->recopieIndividu(trainer,indiv);
+	trainer->generalSplit();
+	trainer->updateLS();
+	trainer->updateIndiv();
+	indiv->recopieIndividu(indiv,trainer);
+}
+
 void Population::updateNbValides (Individu * indiv)
 {		
 	listeValiditeCharge.push_back(indiv->coutSol.capacityViol < 0.001);

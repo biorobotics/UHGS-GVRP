@@ -57,6 +57,10 @@ class Population
    // Education procedure (LS)
    void education(Individu * indiv);
 
+   // Runs everything in education except the local search itself.
+   // This is used when getting the solution
+   void prepare_to_get_solution(Individu * indiv);
+
    // Access to the parameters of the problem
    Params * params ;
 
