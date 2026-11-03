@@ -40,7 +40,7 @@ Population::Population(Params * params) : params(params)
 		education(randomIndiv);
 		addIndividu(randomIndiv) ;
 		updateNbFeas(randomIndiv);
-		if (!randomIndiv->isValid)
+		if (!randomIndiv->isFeasible)
 		{
 			temp = params->penalityCapa ;
 			temp2 = params->penalityLength ;
@@ -58,7 +58,7 @@ Population::Population(Params * params) : params(params)
 			trainer->copyIndividual(randomIndiv,trainer);
 			addIndividu(randomIndiv) ;
 		}
-		if (randomIndiv->isValid) feasibleFound = true ;
+		if (randomIndiv->isFeasible) feasibleFound = true ;
 		delete randomIndiv ;
 	}
 
@@ -133,7 +133,7 @@ int Population::addIndividu (Individu * indiv)
 	SubPop * subpop ;
 	int k, result ;
 
-	if ( indiv->isValid ) subpop = feas_subpop ;
+	if ( indiv->isFeasible ) subpop = feas_subpop ;
 	else subpop = infeas_subpop ;
 
 	result = placeIndividu(subpop,indiv);
@@ -224,7 +224,7 @@ void Population::diversify ()
 		education(randomIndiv);
 		addIndividu(randomIndiv) ;
 		updateNbFeas(randomIndiv);
-		if (!randomIndiv->isValid) 
+		if (!randomIndiv->isFeasible) 
 		{
 			temp = params->penalityCapa ;
 			temp2 = params->penalityLength ;

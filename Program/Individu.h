@@ -140,7 +140,7 @@ public:
 	bool isFitnessComputed ;
 
 	// tells if the individual is feasible
-	bool isValid ;
+	bool isFeasible ;
 
 	// measure of distance from "this" to an individual indiv2
 	double distance(Individu * indiv2);

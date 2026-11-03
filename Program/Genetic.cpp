@@ -32,8 +32,7 @@ void Genetic::evolveHGA (int maxIterNonProd, int nbRec)
 	place2 = 10000 ;
 	nbIterNonProd = 1 ;
 	nbIter = 0 ;
-	string temp ;
-	double fitBeforeRepair ;
+	double penalizedCostBeforeRepair ;
 	CostSol bestSolFeasibility ;
 	clock_t debut = clock() ; 
 
@@ -72,15 +71,15 @@ void Genetic::evolveHGA (int maxIterNonProd, int nbRec)
 		place = population->addIndividu(offspring) ;
 
 		// POSSIBLE REPAIR
-		if (!offspring->isValid) 
+		if (!offspring->isFeasible) 
 		{
-			fitBeforeRepair = offspring->costSol.evaluation ;
+			penalizedCostBeforeRepair = offspring->costSol.evaluation ;
 			if (rand() % 2 == 0) // 50% chance to do repair on an infeasible individual
 			{
 				repair();
-				if (offspring->costSol.evaluation < fitBeforeRepair - 0.01 || offspring->costSol.evaluation > fitBeforeRepair + 0.01 || offspring->isValid) 
+				if (offspring->costSol.evaluation < penalizedCostBeforeRepair - 0.01 || offspring->costSol.evaluation > penalizedCostBeforeRepair + 0.01 || offspring->isFeasible) 
 					place2 = population->addIndividu(offspring) ;
-				if (offspring->isValid)
+				if (offspring->isFeasible)
 					place = place2 ;
 				else 
 					place = min(place,place2);
@@ -88,7 +87,7 @@ void Genetic::evolveHGA (int maxIterNonProd, int nbRec)
 		}
 
 		// SOME TRACES
-		if ( (offspring->isValid && place == 0) || (offspring->costSol.isBetterFeas(bestSolFeasibility) && population->feas_subpop->nbIndiv == 0))
+		if ( (offspring->isFeasible && place == 0) || (offspring->costSol.isBetterFeas(bestSolFeasibility) && population->feas_subpop->nbIndiv == 0))
 		{	
 			if (traces && population->feas_subpop->nbIndiv > 0) 
 				cout << "NEW BEST FEASIBLE " << place << " " << population->getBestFeasibleIndividual()->costSol.evaluation << " distance : " << offspring->costSol.distance << " nbRoutes : " << offspring->costSol.routes << " capaViol : " << offspring->costSol.capacityViol << " lengthViol : " << offspring->costSol.lengthViol << endl << endl ;
@@ -151,7 +150,7 @@ void Genetic::repair ()
 	offspring->updateIndiv();
 
 	// If the first tentative failed, second tentative with higher penalty
-	if (!offspring->isValid) 
+	if (!offspring->isFeasible) 
 	{
 		params->penalityCapa *= 10 ;
 		params->penalityLength *= 10 ;

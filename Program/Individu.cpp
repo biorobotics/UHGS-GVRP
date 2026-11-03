@@ -101,7 +101,7 @@ void Individu::copyIndividual (Individu * destination , Individu * source)
 	destination->costSol.lengthViol = source->costSol.lengthViol ;
 	destination->costSol.routes = source->costSol.routes ;
 	destination->isFitnessComputed = source->isFitnessComputed ;
-	destination->isValid = source->isValid ;
+	destination->isFeasible = source->isFeasible ;
 	destination->successors = source->successors ;
 	destination->predecessors = source->predecessors ;
 	destination->nbRoutes = source->nbRoutes ;
@@ -131,9 +131,9 @@ void Individu::generalSplit()
 
 	// Do we have a feasible solution
 	if (costSol.capacityViol <= 0.00000001 && costSol.lengthViol <= 0.00000001) 
-		isValid = true ;
+		isFeasible = true ;
 	else 
-		isValid = false;
+		isFeasible = false;
 
 	// If split was unsuccessful, we allow more capacity violations
 	// Usually, the allowed capacity violation is largely sufficient, and this message would indicate a bug.

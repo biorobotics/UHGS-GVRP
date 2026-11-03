@@ -63,6 +63,7 @@ void Params::calculateStructures ()
 
 	for (int i=0 ; i < nbClients + nbDepots ; i++)
 	{
+    // For cluster i, create vector of cluster pairs (j, i) with j \neq i
 		myVector.clear();
 		for (int j=0 ; j < nbClients + nbDepots ; j++)
 		{
@@ -71,7 +72,7 @@ void Params::calculateStructures ()
 			if ( i != j ) myVector.push_back(myPair);
 		}
 
-		// For each customer, sorting the list of other customers
+		// Sort from smallest to largest distance
 		std::sort(myVector.begin(),myVector.end(),compPredicate);
 
 		// And keeping only the closest ones
@@ -88,7 +89,6 @@ void Params::getClient (int i, Client * myCli)
 {
 	myCli->custNum = i ;
 	myCli->freq = 1 ;
-	myCli->serviceDuration = 0 ;
 
   myCli->demand = 0 ;
   if (i == 0)
