@@ -33,7 +33,7 @@ void LocalSearch::runSearchTotal ()
 	for (int day = 1 ; day <= params->nbDays ; day++)
 		nbMoves += mutationSameDay (day) ;
 	nbTotalRISinceBeginning += nbMoves ;
-
+  
 	// PI and RI local search (only for PCARP and MDCARP, see Vidal et al 2012 (OR)
 	if (params->periodique || params->multiDepot)
 	{
@@ -54,6 +54,29 @@ void LocalSearch::runSearchTotal ()
 	}
 }
 
+void LocalSearch::apply_move(int ibest, int jbest, bool reverseRouteU, bool reverseRouteV, Noeud *Ubest, Noeud *Vbest, MoveType best_move_type) {
+  noeudU = Ubest;
+  routeU = noeudU->route ;
+  vehicleU = routeU->vehicle ;
+
+  noeudV = Vbest;
+  routeV = noeudV->route ;
+  vehicleV = routeV->vehicle ;
+  if (best_move_type == MoveType::InterRouteGeneralInsert) {
+    applyInterRouteGeneralInsertMove(ibest, jbest);
+  } else if (best_move_type == MoveType::InterRoute2Opt) {
+    applyInterRoute2OptMove();
+  } else if (best_move_type == MoveType::InterRoute2OptInv) {
+    applyInterRoute2OptInvMove(reverseRouteU, reverseRouteV);
+  } else if (best_move_type == MoveType::IntraRouteGeneralInsert) {
+    applyIntraRouteGeneralInsertDroiteMove(ibest, jbest);
+  } else if (best_move_type == MoveType::IntraRoute2Opt) {
+    applyIntraRoute2OptMove();
+  } else {
+    throw std::runtime_error("Unsupported best_move_type");
+  }
+}
+
 int LocalSearch::mutationSameDay (int day)
 {
 	// Local Search for one given day
@@ -65,11 +88,114 @@ int LocalSearch::mutationSameDay (int day)
 	int nbMoves = 0;
 	bool routeVideTestee ;
 	Noeud * tempNoeud ;
-	int size2 ;
+
+  int num_moves_since_last_acceptance = 0;
+
+  int ibest;
+  int jbest;
+  bool reverseRouteU;
+  bool reverseRouteV;
+  Noeud *Ubest;
+  Noeud *Vbest;
+  MoveType best_move_type = MoveType::None;
+  double best_cost_delta = 0.;
 
 	// We search and apply moves until a local minimum is attained
 	while (!rechercheTerminee)
 	{
+    int size2 ;
+    int num_possible_moves = 0;
+    // For every node U in random order
+    for ( int posU = 0 ; posU < (int)ordreParcours[day].size() ; posU ++ )
+    {
+			routeVideTestee = false ;
+
+			noeudU = &clients[day][ordreParcours[day][posU]];
+			routeU = noeudU->route ;
+			vehicleU = routeU->vehicle ;
+			x = noeudU->suiv ;
+
+			// In the CARP, some service removal do not reduce the cost of the route
+			// In this case, very few moves can improve the solution (only 2-opt variants), and thus SWAP and RELOCATE variants do not need to be tested
+			costBeforeRemoval = noeudU->seq0_i->evaluation(routeU->depot->pred->seq0_i,routeU->vehicle);
+			costAfterRemoval = noeudU->seq0_i->evaluation(noeudU->pred->seq0_i,noeudU->suiv->seqi_n,routeU->vehicle);
+			gainWhenRemoving = (costAfterRemoval < costBeforeRemoval - 0.1) ;
+
+      // For every node V in random order
+      size2 = (int)noeudU->moves.size();
+      num_possible_moves += size2;
+
+			noeudV = noeudU->suiv ;
+			routeV = noeudV->route ;
+			vehicleV = routeV->vehicle ;
+			y = noeudV->suiv ;
+			if (!noeudV->route->nodeAndRouteTested[noeudU->cour])
+			{
+				while (!noeudV->estUnDepot)
+				{ 
+					// Testing 2-Opt between U and V (if the restriction of the granular search allows) 
+					if (params->isCorrelated[noeudU->pred->cour][noeudV->cour] || params->isCorrelated[noeudU->cour][noeudV->suiv->cour]) {
+						++num_possible_moves;
+          }
+					noeudV = noeudV->suiv ;
+					y = noeudV->suiv ;
+				}
+			}
+
+			// Special cases : testing the insertions behind the depot, and the empty routes
+			for (int route = 0 ; route < params->nbVehiculesPerDep; route ++)
+			{
+				noeudV = &depots[day][route] ;
+				routeV = noeudV->route ;
+				y = noeudV->suiv ;
+				if ( (!noeudV->route->nodeAndRouteTested[noeudU->cour]) && (!y->estUnDepot || !routeVideTestee))
+				{
+					if (y->estUnDepot) routeVideTestee = true ;
+					if (routeV != routeU)
+					{
+						tempNoeud = noeudV ;
+						noeudV = depots[day][route].suiv ;
+						y = noeudV->suiv ;
+
+						// Insertion after the depot, in a different route
+						if (gainWhenRemoving && (params->isCorrelated[noeudU->cour][noeudV->cour] || params->isCorrelated[noeudU->cour][y->cour])) {
+							++num_possible_moves;
+            }
+
+						noeudV = noeudV->route->depot ;
+						y = noeudV->suiv ;
+
+						// 2-Opt* after the depot
+						if (params->isCorrelated[noeudU->pred->cour][noeudV->cour]) {
+							++num_possible_moves;
+            }
+
+						// 2-Opt* after the depot
+						if ((params->isCorrelated[x->cour][y->cour] || params->isCorrelated[y->cour][x->cour])) {
+							++num_possible_moves;
+            }
+
+						noeudV = tempNoeud ;
+						y = noeudV->suiv ;
+					}
+					else
+					{
+						tempNoeud = noeudV ;
+						noeudV = depots[day][route].suiv ;
+						y = noeudV->suiv ;
+
+						// Insertion after the depot, in the same route
+						if ((params->isCorrelated[noeudU->cour][noeudV->cour] || params->isCorrelated[noeudU->cour][y->cour])) {
+							++num_possible_moves;
+            }
+
+						noeudV = tempNoeud ;
+						y = noeudV->suiv ;
+					}
+				}
+			}
+    }
+
 		rechercheTerminee = true ;
 		moveEffectue = 0 ;
 
@@ -114,18 +240,48 @@ int LocalSearch::mutationSameDay (int day)
 							y = noeudV->suiv ;
 							// Testing Relocate, Swap, CROSS and I-CROSS (limited to 2 customers) of nodeU and nodeV 
 							// Case where they are in different routes
-							if (gainWhenRemoving) moveEffectue = interRouteGeneralInsert(); 
+							if (gainWhenRemoving) {
+                int cand_ibest;
+                int cand_jbest;
+                double cost_delta = interRouteGeneralInsert(cand_ibest, cand_jbest); 
+                if (cost_delta < best_cost_delta) {
+                  ibest = cand_ibest;
+                  jbest = cand_jbest;
+                  best_cost_delta = cost_delta;
+                  Ubest = noeudU;
+                  Vbest = noeudV;
+                  best_move_type = MoveType::InterRouteGeneralInsert;
+                }
+              } 
 							noeudV = tempNoeud ;
 							y = noeudV->suiv ;
 						}
 
 						// 2-Opt*
-						if (moveEffectue != 1) 
-							moveEffectue = interRoute2Opt ();
+						if (moveEffectue != 1) {
+							double cost_delta = interRoute2Opt ();
+              if (cost_delta < best_cost_delta) {
+                best_cost_delta = cost_delta;
+                Ubest = noeudU;
+                Vbest = noeudV;
+                best_move_type = MoveType::InterRoute2Opt;
+              }
+            }
 
 						// 2-Opt* (second type, where the routes can be reversed)
-						if (moveEffectue != 1) 
-							moveEffectue = interRoute2OptInv ();
+						if (moveEffectue != 1) {
+              bool cand_reverseRouteU;
+              bool cand_reverseRouteV;
+							double cost_delta = interRoute2OptInv (cand_reverseRouteU, cand_reverseRouteV);
+              if (cost_delta < best_cost_delta) {
+                reverseRouteU = cand_reverseRouteU;
+                reverseRouteV = cand_reverseRouteV;
+                best_cost_delta = cost_delta;
+                Ubest = noeudU;
+                Vbest = noeudV;
+                best_move_type = MoveType::InterRoute2OptInv;
+              }
+            }
 					}
 					else
 					{
@@ -135,12 +291,29 @@ int LocalSearch::mutationSameDay (int day)
 
 						// Testing Relocate, Swap, CROSS and I-CROSS (limited to 2 customers) of nodeU and nodeV 
 						// Case where they are in the same route
-						if (moveEffectue != 1 && gainWhenRemoving) 
-							moveEffectue = intraRouteGeneralInsertDroite();
+						if (moveEffectue != 1 && gainWhenRemoving) {
+              int cand_ibest;
+              int cand_jbest;
+							double cost_delta = intraRouteGeneralInsertDroite(ibest, jbest);
+
+              if (cost_delta < best_cost_delta) {
+                ibest = cand_ibest;
+                jbest = cand_jbest;
+                best_cost_delta = cost_delta;
+                Ubest = noeudU;
+                Vbest = noeudV;
+                best_move_type = MoveType::IntraRouteGeneralInsert;
+              }
+            }
 						noeudV = tempNoeud ;
 						y = noeudV->suiv ;
 					}
 				}
+        ++num_moves_since_last_acceptance;
+        if (num_moves_since_last_acceptance >= 0.05*num_possible_moves && best_cost_delta < 0) {
+          apply_move(ibest, jbest, reverseRouteU, reverseRouteV, Ubest, Vbest, best_move_type);
+          moveEffectue = 1;
+        }
 			}
 
 			noeudV = noeudU->suiv ;
@@ -152,8 +325,21 @@ int LocalSearch::mutationSameDay (int day)
 				while (moveEffectue != 1 && !noeudV->estUnDepot)
 				{ 
 					// Testing 2-Opt between U and V (if the restriction of the granular search allows) 
-					if (params->isCorrelated[noeudU->pred->cour][noeudV->cour] || params->isCorrelated[noeudU->cour][noeudV->suiv->cour]) 
-						moveEffectue = intraRoute2Opt ();
+					if (params->isCorrelated[noeudU->pred->cour][noeudV->cour] || params->isCorrelated[noeudU->cour][noeudV->suiv->cour]) {
+						double cost_delta = intraRoute2Opt ();
+
+            if (cost_delta < best_cost_delta) {
+              best_cost_delta = cost_delta;
+              Ubest = noeudU;
+              Vbest = noeudV;
+              best_move_type = MoveType::IntraRoute2Opt;
+            }
+            ++num_moves_since_last_acceptance;
+            if (num_moves_since_last_acceptance >= 0.05*num_possible_moves && best_cost_delta < 0) {
+              apply_move(ibest, jbest, reverseRouteU, reverseRouteV, Ubest, Vbest, best_move_type);
+              moveEffectue = 1;
+            }
+          }
 					noeudV = noeudV->suiv ;
 					y = noeudV->suiv ;
 				}
@@ -175,19 +361,65 @@ int LocalSearch::mutationSameDay (int day)
 						y = noeudV->suiv ;
 
 						// Insertion after the depot, in a different route
-						if (gainWhenRemoving && (params->isCorrelated[noeudU->cour][noeudV->cour] || params->isCorrelated[noeudU->cour][y->cour]) && moveEffectue != 1 ) 
-							moveEffectue = interRouteGeneralInsert();
+						if (gainWhenRemoving && (params->isCorrelated[noeudU->cour][noeudV->cour] || params->isCorrelated[noeudU->cour][y->cour]) && moveEffectue != 1 ) {
+              int cand_ibest;
+              int cand_jbest;
+							double cost_delta = interRouteGeneralInsert(ibest, jbest);
+
+              if (cost_delta < best_cost_delta) {
+                ibest = cand_ibest;
+                jbest = cand_jbest;
+                best_cost_delta = cost_delta;
+                Ubest = noeudU;
+                Vbest = noeudV;
+                best_move_type = MoveType::InterRouteGeneralInsert;
+              }
+              ++num_moves_since_last_acceptance;
+              if (num_moves_since_last_acceptance >= 0.05*num_possible_moves && best_cost_delta < 0) {
+                apply_move(ibest, jbest, reverseRouteU, reverseRouteV, Ubest, Vbest, best_move_type);
+                moveEffectue = 1;
+              }
+            }
 
 						noeudV = noeudV->route->depot ;
 						y = noeudV->suiv ;
 
 						// 2-Opt* after the depot
-						if (params->isCorrelated[noeudU->pred->cour][noeudV->cour] && moveEffectue != 1) 
-							moveEffectue = interRoute2Opt ();
+						if (params->isCorrelated[noeudU->pred->cour][noeudV->cour] && moveEffectue != 1) {
+							double cost_delta = interRoute2Opt ();
+              if (cost_delta < best_cost_delta) {
+                best_cost_delta = cost_delta;
+                Ubest = noeudU;
+                Vbest = noeudV;
+                best_move_type = MoveType::InterRoute2Opt;
+              }
+              ++num_moves_since_last_acceptance;
+              if (num_moves_since_last_acceptance >= 0.05*num_possible_moves && best_cost_delta < 0) {
+                apply_move(ibest, jbest, reverseRouteU, reverseRouteV, Ubest, Vbest, best_move_type);
+                moveEffectue = 1;
+              }
+            }
 
 						// 2-Opt* after the depot
-						if ((params->isCorrelated[x->cour][y->cour] || params->isCorrelated[y->cour][x->cour]) && moveEffectue != 1) 
-							moveEffectue = interRoute2OptInv ();
+						if ((params->isCorrelated[x->cour][y->cour] || params->isCorrelated[y->cour][x->cour]) && moveEffectue != 1) {
+              bool cand_reverseRouteU;
+              bool cand_reverseRouteV;
+							double cost_delta = interRoute2OptInv (cand_reverseRouteU, cand_reverseRouteV);
+
+              if (cost_delta < best_cost_delta) {
+                reverseRouteU = cand_reverseRouteU;
+                reverseRouteV = cand_reverseRouteV;
+                best_cost_delta = cost_delta;
+                Ubest = noeudU;
+                Vbest = noeudV;
+                best_move_type = MoveType::InterRoute2OptInv;
+              }
+              ++num_moves_since_last_acceptance;
+              if (num_moves_since_last_acceptance >= 0.05*num_possible_moves && best_cost_delta < 0) {
+                apply_move(ibest, jbest, reverseRouteU, reverseRouteV, Ubest, Vbest, best_move_type);
+                moveEffectue = 1;
+              }
+            }
 
 						noeudV = tempNoeud ;
 						y = noeudV->suiv ;
@@ -199,8 +431,25 @@ int LocalSearch::mutationSameDay (int day)
 						y = noeudV->suiv ;
 
 						// Insertion after the depot, in the same route
-						if ((params->isCorrelated[noeudU->cour][noeudV->cour] || params->isCorrelated[noeudU->cour][y->cour]) && moveEffectue != 1) 
-							moveEffectue = intraRouteGeneralInsertDroite();
+						if ((params->isCorrelated[noeudU->cour][noeudV->cour] || params->isCorrelated[noeudU->cour][y->cour]) && moveEffectue != 1) {
+              int cand_ibest;
+              int cand_jbest;
+							double cost_delta = intraRouteGeneralInsertDroite(cand_ibest, cand_jbest);
+
+              if (cost_delta < best_cost_delta) {
+                ibest = cand_ibest;
+                jbest = cand_jbest;
+                best_cost_delta = cost_delta;
+                Ubest = noeudU;
+                Vbest = noeudV;
+                best_move_type = MoveType::IntraRouteGeneralInsert;
+              }
+              ++num_moves_since_last_acceptance;
+              if (num_moves_since_last_acceptance >= 0.05*num_possible_moves && best_cost_delta < 0) {
+                apply_move(ibest, jbest, reverseRouteU, reverseRouteV, Ubest, Vbest, best_move_type);
+                moveEffectue = 1;
+              }
+            }
 
 						noeudV = tempNoeud ;
 						y = noeudV->suiv ;
@@ -216,35 +465,10 @@ int LocalSearch::mutationSameDay (int day)
 	return nbMoves ;
 }
 
-int LocalSearch::mutationDifferentDay ()
-{
-	// Local Search to improve the pattern choices for customers (PCARP and MDCARP)
-	// Only a single move, which is a relocate of all occurences of a customer in the best combination of days
-	// This move is still used for problems with a single period, in this case it only does a relocate without granular search restriction
-	rechercheTerminee = false ;
-	int nbMoves = 0 ;
-	firstLoop = true ;
-
-	for (int day = 1 ; day <= params->nbDays ; day++)
-		for (int r=0 ; r < params->nombreVehicules[day] ; r++)
-			routes[day][r].initiateInsertions() ;
-
-	while ( !rechercheTerminee )
-	{
-		rechercheTerminee = true ;
-		// Searching for a better insertion place for all customers
-		for ( int posU = 0 ; posU < params->nbClients ; posU ++ )
-			nbMoves += searchBetterPattern(ordreParcours[0][posU]);
-		firstLoop = false ;
-	}
-	return nbMoves ;
-}
-
-int LocalSearch::interRouteGeneralInsert()
+double LocalSearch::interRouteGeneralInsert(int &ibest, int &jbest)
 {
 	// For a pair of nodes U, V, tests together the Relocate, Swap, and variants of CROSS and I-CROSS limited to two consecutive nodes.
 	// Some route evaluations can be gained (about 40%) by doing these computations is a combined manner
-	int ibest, jbest ;
 	double moveMin ;
 	double temp ;
 	SeqData * seq = noeudU->seq0_i ;
@@ -439,8 +663,12 @@ int LocalSearch::interRouteGeneralInsert()
 	if ( ibest == 0 && jbest == 0) 
 		return 0 ;
 
-	/* AN IMPROVING MOVE HAS BEEN DETECTED, IT IS DIRECTLY APPLIED */
+  return moveMin - costZero;
+}
 
+
+// noeudV and noeudU and routeV and routeU must be set appropriately beforehand
+void LocalSearch::applyInterRouteGeneralInsertMove(int ibest, int jbest) {
 	Noeud * placeV = noeudV->pred ;
 	Noeud * placeU = noeudU->pred ;
 	reinitSingleDayMoves(placeU->route); // Say that all moves involving this route must be tested again
@@ -462,10 +690,9 @@ int LocalSearch::interRouteGeneralInsert()
 
 	rechercheTerminee = false ; // Not finished the search
 	nbInterSwap ++ ;
-	return 1 ; // Return Success
 }
 
-int LocalSearch::interRoute2Opt ()
+double LocalSearch::interRoute2Opt ()
 {
 	// Testing 2-Opt* between U and V
 	double cost ;
@@ -486,8 +713,11 @@ int LocalSearch::interRoute2Opt ()
 	if ( cost  > -EPSILON_LS ) 
 		return 0 ; 
 
-	/* AN IMPROVING MOVE HAS BEEN DETECTED, IT IS DIRECTLY APPLIED */
+  return cost;
+}
 
+// noeudV and noeudU and routeV and routeU must be set appropriately beforehand
+void LocalSearch::applyInterRoute2OptMove() {
 	reinitSingleDayMoves(routeU);  // Say that all moves involving this route must be tested again
 	reinitSingleDayMoves(routeV);  // Say that all moves involving this route must be tested again
 	Noeud * tempU = noeudU ;
@@ -545,18 +775,16 @@ int LocalSearch::interRoute2Opt ()
 	nbInter2Opt ++ ;
 	noeudU = tempU ;
 	x = noeudU->suiv ;
-	return 1 ; // Return Success
 }
 
 
-int LocalSearch::interRoute2OptInv()
+double LocalSearch::interRoute2OptInv(bool &reverseRouteU, bool &reverseRouteV)
 {
 	// 2-Opt* with route inversions
 	SeqData * seq = noeudU->seq0_i ;
 	double cost ;
 	double costTemp ;
 	double costTempReverse = 1.e30 ;
-	bool reverseRouteU, reverseRouteV ; 
 	if (noeudU->route == noeudV->route) { return 0 ; }
 	double costZero = routeU->currentRouteCost + routeV->currentRouteCost ;
 
@@ -590,8 +818,11 @@ int LocalSearch::interRoute2OptInv()
 	if ( cost  > -EPSILON_LS ) 
 		return 0 ;
 
-	/* AN IMPROVING MOVE HAS BEEN DETECTED, IT IS DIRECTLY APPLIED */
+  return cost;
+}
 
+// noeudV and noeudU and routeV and routeU must be set appropriately beforehand
+void LocalSearch::applyInterRoute2OptInvMove(bool reverseRouteU, bool reverseRouteV) {
 	reinitSingleDayMoves(noeudU->route);  // Say that all moves involving this route must be tested again
 	reinitSingleDayMoves(noeudV->route);  // Say that all moves involving this route must be tested again
 	Noeud * depotU = routeU->depot ;
@@ -663,10 +894,9 @@ int LocalSearch::interRoute2OptInv()
 
 	rechercheTerminee = false ; // Not finished the search
 	nbInter2Opt ++ ;
-	return 1 ; // Return Success
 }
 
-int LocalSearch::intraRouteGeneralInsertDroite ()
+double LocalSearch::intraRouteGeneralInsertDroite (int &ibest, int &jbest)
 {
 	// For a pair of nodes U, V, IN THE SAME ROUTE, tests together the Relocate, Swap, and variants of CROSS and I-CROSS limited to two consecutive nodes.
 	Noeud * tempU = noeudU ;
@@ -690,7 +920,6 @@ int LocalSearch::intraRouteGeneralInsertDroite ()
 	}
 
 	double moveMin ;
-	int ibest, jbest ;
 	SeqData * seq = noeudU->seq0_i ;
 	Noeud * Upred = noeudU->pred ;
 	Noeud * placeU = noeudU->pred ;
@@ -1141,10 +1370,36 @@ int LocalSearch::intraRouteGeneralInsertDroite ()
 		return 0 ;
 	}
 
+  return moveMin;
+}
 
+// noeudV and noeudU and routeV and routeU must be set appropriately beforehand
+void LocalSearch::applyIntraRouteGeneralInsertDroiteMove(int ibest, int jbest) {
 	///////////////////////////////////////////
 	// HERE STARTS THE MOVE APPLICATION PROCESS
 	///////////////////////////////////////////
+
+	// For a pair of nodes U, V, IN THE SAME ROUTE, tests together the Relocate, Swap, and variants of CROSS and I-CROSS limited to two consecutive nodes.
+	Noeud * tempU = noeudU ;
+	Noeud * tempV = noeudV ;
+
+	int decalage = noeudV->place - noeudU->place ; // Decalage is the difference of index between U and V
+	if (decalage >= -1 && decalage <= 1) throw std::runtime_error("decalage >= -1 && decalage <= 1") ; // This means that U and V are already consecutive, testing these moves is useless
+
+	// If decalage < 0, this means that V is on the left of U in the route
+	// We don't want to deal with this case, so we simply inverse the notations of U and V 
+	// And we deal in the following with only the case where V is on the right
+	if ( decalage < 0 )
+	{
+		noeudU = tempV ;
+		noeudV = tempU ;
+		x = noeudU->suiv ;
+		y = noeudV->suiv ;
+		decalage = -decalage ;
+	}
+
+	Noeud * placeU = noeudU->pred ;
+	Noeud * placeV = noeudV->pred ;
 
 	reinitSingleDayMoves(routeU);  // Say that all moves involving this route must be tested again
 
@@ -1181,16 +1436,12 @@ int LocalSearch::intraRouteGeneralInsertDroite ()
 	noeudV = tempV ;
 	x = noeudU->suiv ;
 	y = noeudV->suiv ;
-	return 1 ; // Return Success
 }
 
 
-int LocalSearch::intraRoute2Opt ()
+double LocalSearch::intraRoute2Opt ()
 {
 	// Evaluation procedure for 2-Opt
-	Noeud * nodeNum = noeudU->suiv ;
-	Noeud * nodeUpred = noeudU->pred ;
-	Noeud * temp ;
 	SeqData * seq = noeudU->seq0_i ;
 
 	double cost ;
@@ -1210,6 +1461,15 @@ int LocalSearch::intraRoute2Opt ()
 	cost = seq->evaluation(myseqs,routeU->vehicle) ;
 	if (cost - costZero  > -EPSILON_LS)  
 		return 0 ;
+
+  return cost - costZero;
+}
+
+// noeudV and noeudU and routeV and routeU must be set appropriately beforehand
+void LocalSearch::applyIntraRoute2OptMove() {
+	Noeud * nodeNum = noeudU->suiv ;
+	Noeud * nodeUpred = noeudU->pred ;
+	Noeud * temp ;
 
 	// Apply the move and update the solution
 	reinitSingleDayMoves(routeU);
@@ -1232,7 +1492,6 @@ int LocalSearch::intraRoute2Opt ()
 	setRouteVide(noeudU->jour); // Keep a pointer on the first empty route
 	rechercheTerminee = false ; // Not finished the search
 	nbIntra2Opt ++ ;
-	return 1 ; // Return Success
 }
 
 int LocalSearch::searchBetterPattern (int client)

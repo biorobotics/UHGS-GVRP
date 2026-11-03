@@ -31,6 +31,15 @@
 #include <math.h>
 using namespace std ;
 
+enum MoveType {
+  InterRouteGeneralInsert,
+  InterRoute2Opt,
+  InterRoute2OptInv,
+  IntraRouteGeneralInsert,
+  IntraRoute2Opt,
+  None
+};
+
 // Local Search class
 class LocalSearch
 {
@@ -86,16 +95,28 @@ private:
 	void reinitAllSingleDayMoves();
 
 	// Functions for the evaluation of the classical moves (in RI)
-	int interRouteGeneralInsert(); // Inter-Route General Insert (testing all moves together for a customer pair [i,j] enables to gain a few evaluations)
-	int interRoute2Opt(); // 2-OPT* (without inversion of the routes)
-	int interRoute2OptInv() ; // 2-OPT* (with inversion of the routes)
-	int intraRouteGeneralInsertDroite(); // Intra-Route General Insert (testing all moves together for a customer pair [i,j] enables to gain a few evaluations)
-    int intraRoute2Opt (); // Intra-Route 2-Opt
+	double interRouteGeneralInsert(int &ibest, int &jbest); // Inter-Route General Insert (testing all moves together for a customer pair [i,j] enables to gain a few evaluations)
+	double interRoute2Opt(); // 2-OPT* (without inversion of the routes)
+	double interRoute2OptInv(bool &reverseRouteU, bool &reverseRouteV) ; // 2-OPT* (with inversion of the routes)
+	double intraRouteGeneralInsertDroite(int &ibest, int &jbest); // Intra-Route General Insert (testing all moves together for a customer pair [i,j] enables to gain a few evaluations)
+  double intraRoute2Opt (); // Intra-Route 2-Opt
 
 	// change the pattern of "client" if its possible to find a better pattern (PI)
 	int searchBetterPattern (int client);
 	void computeCoutInsertion(Noeud * client, int pattern) ; // subprocedures for PI
 	void evalInsertClient (Route * R, Noeud * U, int pattern) ; // subprocedures for PI
+
+  void apply_move(int ibest, int jbest, bool reverseRouteU, bool reverseRouteV, Noeud *Ubest, Noeud *Vbest, MoveType best_move_type);
+
+  void applyInterRouteGeneralInsertMove(int ibest, int jbest);
+
+  void applyInterRoute2OptMove();
+
+  void applyInterRoute2OptInvMove(bool reverseRouteU, bool reverseRouteV);
+  
+  void applyIntraRouteGeneralInsertDroiteMove(int ibest, int jbest);
+
+  void applyIntraRoute2OptMove();
 
 public:
 
