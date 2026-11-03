@@ -68,9 +68,6 @@ class Client
 	// customer number
     int custNum ;
 
-    // coordinates
-    couple coord ;
-
 	// duration for a service
 	double serviceDuration ;
 

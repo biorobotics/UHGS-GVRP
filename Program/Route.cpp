@@ -67,8 +67,6 @@ void Route::updateRouteData (bool isForPrinting)
 {
 	bool firstIt ;
 	int place = 0 ;
-	double Xvalue = 0 ;
-	double Yvalue = 0 ;
 	double nbNodes = 1 ;
 
 	// Computing the auxiliary data on any subsequence (0..i), using forward recursion
@@ -76,16 +74,12 @@ void Route::updateRouteData (bool isForPrinting)
 	noeud->place = place ;
 	noeud->seq0_i->initialisation(noeud->cour,params,individu,day,isForPrinting);
 	noeud->seqi_0->initialisation(noeud->cour,params,individu,day,false);
-	Xvalue += params->cli[noeud->cour].coord.x ;
-	Yvalue += params->cli[noeud->cour].coord.y ;
 
 	firstIt = true ;
 	while (!noeud->estUnDepot || firstIt)
 	{
 		firstIt = false ;
 		noeud = noeud->suiv ;
-		Xvalue += params->cli[noeud->cour].coord.x ;
-		Yvalue += params->cli[noeud->cour].coord.y ;
 		nbNodes ++ ;
 		place ++ ;
 		noeud->place = place ;
