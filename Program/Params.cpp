@@ -131,7 +131,7 @@ void Params::getClient (int i, Client * myCli)
 }
 
 // vc is vehicle capacity. Assume depot cluster is cluster 0 and depot node is node 0
-Params::Params(unsigned int seedRNG, int nbVeh, double vc, const Ref<const VectorXd> &demand_per_cluster, bool take_first_soln, const std::vector<py::array_t<long>> &cluster_to_node_ptr, const Ref<const MatrixXd> &cost_mat, double cost_thresh):nbVehiculesPerDep(nbVeh), nbDepots(1), isSearchingFeasible(false), cost_thresh(cost_thresh)
+Params::Params(unsigned int seedRNG, int nbVeh, double vc, const Ref<const VectorXd> &demand_per_cluster, bool take_first_soln, const std::vector<std::vector<int>> &cluster_to_node_ptr, const std::vector<std::vector<double>> &cost_mat, double cost_thresh):nbVehiculesPerDep(nbVeh), nbDepots(1), isSearchingFeasible(false), cost_thresh(cost_thresh)
 {
 	// Main constructor of Params
 	borne = 2.0 ;
@@ -151,7 +151,7 @@ Params::Params(unsigned int seedRNG, int nbVeh, double vc, const Ref<const Vecto
 	periodique = false ;
 
   int num_clusters = cluster_to_node_ptr.size() - 1; // Not including depot
-  int num_nodes = cost_mat.rows();
+  num_nodes = cost_mat.size();
 
 	// Setting the other instance parameters
 	nbDays = 1 ;
@@ -185,8 +185,6 @@ Params::Params(unsigned int seedRNG, int nbVeh, double vc, const Ref<const Vecto
 
   // Formerly the code from ar_parseOtherLinesNEARP_TP();
 
-  num_nodes = cost_mat.rows();
-
 	/* FIRST SPECIFY THE DEPOT CHARACTERISTICS */
 	cli[0].ar_Nodes.push_back(0);
 	cli[0].ar_nbNodes = 1 ;
@@ -201,32 +199,16 @@ Params::Params(unsigned int seedRNG, int nbVeh, double vc, const Ref<const Vecto
 
 	/* BUILDING THE ARC DISTANCE STRUCTURES */
 
-	this->cost_mat.resize(num_nodes);
-	for (int i=0 ; i < num_nodes ; i++) {
-		this->cost_mat[i] = std::vector<double>(num_nodes, 1.e20);
-  }
-
+	this->cost_mat = cost_mat;
 	for (int i=0 ; i < num_nodes ; i++) {
 		this->cost_mat[i][i] = 0 ; 
   }
-
-	for (int i=0 ; i < num_nodes ; i++)
-	{
-		for (int j=0 ; j < num_nodes ; j++)
-		{
-      if (i != j) {
-        this->cost_mat[i][j] = cost_mat(i, j);
-      }
-		}
-	}
-
 	/* SPECIFYING THE NODES FOR THE CLIENT DELIVERIES */
 	for (int i=1 ; i <= num_clusters ; i++)
 	{
-    auto ptr = cluster_to_node_ptr[i].unchecked();
-		cli[i].ar_nbNodes = cluster_to_node_ptr[i].shape(0) ;
-    for (int local_node_idx = 0; local_node_idx < ptr.shape(0); ++local_node_idx) {
-      cli[i].ar_Nodes.push_back(ptr(local_node_idx));
+		cli[i].ar_nbNodes = cluster_to_node_ptr[i].size() ;
+    for (int local_node_idx = 0; local_node_idx < cluster_to_node_ptr[i].size(); ++local_node_idx) {
+      cli[i].ar_Nodes.push_back(cluster_to_node_ptr[i][local_node_idx]);
     }
 	}
 
