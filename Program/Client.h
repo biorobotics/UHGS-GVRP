@@ -68,9 +68,6 @@ class Client
 	// customer number
     int custNum ;
 
-	// duration for a service
-	double serviceDuration ;
-
 	// demand of a customer
 	// (demand per day in a PCARP).
 	double demand ;

@@ -107,7 +107,6 @@ void Params::getClient (int i, Client * myCli)
 
 	myCli->custNum = i ;
 	myCli->freq = 1 ;
-	myCli->serviceDuration = 0 ;
 
   myCli->demand = 0 ;
   if (i == 0)
