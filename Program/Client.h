@@ -58,15 +58,6 @@ struct pattern {
 	}
 };
 
-// used only for NEARP with turn penalties
-struct Arc {
-	int indexArc ;
-	int nodeBegin ;
-	int nodeEnd ;
-	double cost ;
-	int nb_Turns ;
-};
-
 // different client types
 enum ClientType {AR_DEPOT, AR_CLIENT_NODE, AR_CLIENT_EDGE, AR_CLIENT_ARC};
 
