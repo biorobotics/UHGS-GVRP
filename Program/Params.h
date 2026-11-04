@@ -33,6 +33,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
 #include <Eigen/Dense>
+#include <chrono>
 
 using namespace Eigen;
 namespace py = pybind11;
@@ -173,11 +174,11 @@ public:
 
   double cost_thresh;
 
-  clock_t max_ticks;
-  clock_t debut_time;
+  double timeLimit;
+  std::chrono::time_point<std::chrono::high_resolution_clock> debut_time;
 
 	// constructor
-  Params(unsigned int seedRNG, int nbVeh, double vc, const Ref<const VectorXd> &demand_per_cluster, bool take_first_soln, const std::vector<std::vector<int>> &cluster_to_node_ptr, const std::vector<std::vector<double>> &cost_mat, double cost_thresh, clock_t max_ticks);
+  Params(unsigned int seedRNG, int nbVeh, double vc, const Ref<const VectorXd> &demand_per_cluster, bool take_first_soln, const std::vector<std::vector<int>> &cluster_to_node_ptr, const std::vector<std::vector<double>> &cost_mat, double cost_thresh, double timeLimit);
 
 	// destructor
 	~Params(void);

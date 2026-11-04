@@ -50,7 +50,7 @@ void Genetic::evolveHGA (int maxIterNonProd, int nbRec)
 
 	cout << "| Start of GA | NbNodes : " << params->nbClients << " | NbVehicles : " << params->nbVehiculesPerDep << " | " << endl ;
 
-	while (nbIterNonProd < maxIterNonProd && (clock() - params->debut_time <= params->max_ticks) && (!params->isSearchingFeasible || population->getIndividuBestValide() == NULL))
+	while (nbIterNonProd < maxIterNonProd && (std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-params->debut_time).count()/1.0e9 < params->timeLimit) && (!params->isSearchingFeasible || population->getIndividuBestValide() == NULL))
 	{
     if (population->getIndividuBestValide() != NULL && population->getIndividuBestValide()->coutSol.distance < params->cost_thresh) {
       std::cout << "Returning because we found a solution with cost lower than the provided threshold" << std::endl;
@@ -129,7 +129,7 @@ void Genetic::evolveHGA (int maxIterNonProd, int nbRec)
 			cout << " | inter2opt " << rejeton->localSearch->nbInter2Opt ;
 			cout << " | intra2opt " << rejeton->localSearch->nbIntra2Opt ;
 			cout << " | " << endl ;
-			cout << " | CPU Time : " <<  (double)clock()/(double)CLOCKS_PER_SEC << " seconds " << endl ;
+			cout << " | Wall time elapsed : " <<  std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-params->debut_time).count()/1.0e9 << " seconds " << endl ;
 			cout << endl ;
 		}
 		nbIter ++ ;
@@ -138,7 +138,7 @@ void Genetic::evolveHGA (int maxIterNonProd, int nbRec)
 	// END OF THE ALGORITHM
 	if (traces)
 	{
-		cout << "Time Elapsed : " << clock() << endl ;
+		cout << "Time Elapsed : " << std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-params->debut_time).count()/1.0e9 << endl ;
 		cout << "Number of Iterations : " << nbIter << endl ;
 	}
 }
@@ -170,7 +170,7 @@ void Genetic::evolveILS ()
 		rejetonBestFound->coutSol.evaluation = 1.e30 ;
 		isFirstLoop = true ;
 		
-		for (int nbGenerationNonProd = 0 ; nbGenerationNonProd < nbILS && (clock() - params->debut_time <= params->max_ticks) ; nbGenerationNonProd ++)
+		for (int nbGenerationNonProd = 0 ; nbGenerationNonProd < nbILS && (std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-params->debut_time).count()/1.0e9 < params->timeLimit) ; nbGenerationNonProd ++)
 		{
 			if (!isFirstLoop)
 			{
@@ -230,7 +230,7 @@ void Genetic::evolveILS ()
 				cout << " | inter2opt " << rejeton->localSearch->nbInter2Opt ;
 				cout << " | intra2opt " << rejeton->localSearch->nbIntra2Opt ;
 				cout << " | " << endl ;
-				cout << " | CPU Time : " <<  (double)clock()/(double)CLOCKS_PER_SEC << " seconds " << endl ;
+				cout << " | Wall time elapsed : " <<  std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-params->debut_time).count()/1.0e9 << " seconds " << endl ;
 				cout << endl ;
 			}
 		}
@@ -239,7 +239,7 @@ void Genetic::evolveILS ()
 	// fin de l'algorithme , diverses informations affichées
 	if (traces) 
 	{
-		cout << "temps passe : " << clock() << endl ;
+		cout << "temps passe : " << std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-params->debut_time).count()/1.0e9 << endl ;
 		cout << "fin evolution ILS, nombre d'iterations : " << nbIter << endl ;
 	}
 

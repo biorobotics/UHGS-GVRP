@@ -64,8 +64,8 @@ class Population
    // Access to the parameters of the problem
    Params * params ;
 
-   // clock time when the best individual was found
-   clock_t timeBest ;
+   // elapsed wall time when the best individual was found
+   double timeBest ;
 
    // Auxiliary data structure (Individual) with all local search data structures
    // To do the LS on a given individual, we simply copy in this individual and run the LS there.

@@ -294,7 +294,7 @@ int Population::placeIndividu(SousPop * pop, Individu * indiv)
 		placed = true ;
 		pop->nbIndiv ++ ;
 		updateProximity (pop, pop->individus[0]);
-		if (pop == valides) timeBest = clock();
+		if (pop == valides) timeBest = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-params->debut_time).count()/1.0e9;
 		return 0 ; // success
 	}
 	throw string ("erreur placeIndividu") ;
@@ -464,12 +464,10 @@ void Population::ExportBest (string nomFichier)
 		cout << " | in " << nomFichier.c_str() << endl ;
 
 		// Printing the total time of the run
-		// (we print the number of clock ticks to help for short runs, the user will do the proper conversion) 
-		myfile << (long long) clock() << endl ;
+		myfile << std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-params->debut_time).count()/1.0e9 << endl ;
 
 		// Printing the time to find the best solution
-		// (we print the number of clock ticks to help for short runs, the user will do the proper conversion) 
-		myfile << (long long) timeBest << endl ;
+		myfile << timeBest << endl ;
 
 		// Printing the routes and their content
 		for (int k=1 ; k <= params->nbDays ; k++)
