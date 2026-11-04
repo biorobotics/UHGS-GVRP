@@ -39,7 +39,6 @@ void Genetic::evolveHGA (int maxIterNonProd, int nbRec)
 	string temp ;
 	double fitBeforeRepair ;
 	CoutSol bestSolFeasibility ;
-	clock_t debut = clock() ; // When iterating several time the HGA (e.g. PCARP, the time limit applies to one iteration -- fleet size or max distance value)
 
 	if (population->getIndividuBestValide() != NULL) bestSolFeasibility = population->getIndividuBestValide()->coutSol ;
 	else bestSolFeasibility = population->getIndividuBestInvalide()->coutSol ;
@@ -51,7 +50,7 @@ void Genetic::evolveHGA (int maxIterNonProd, int nbRec)
 
 	cout << "| Start of GA | NbNodes : " << params->nbClients << " | NbVehicles : " << params->nbVehiculesPerDep << " | " << endl ;
 
-	while (nbIterNonProd < maxIterNonProd && (clock() - debut <= ticks) && (!params->isSearchingFeasible || population->getIndividuBestValide() == NULL))
+	while (nbIterNonProd < maxIterNonProd && (clock() - params->debut_time <= params->max_ticks) && (!params->isSearchingFeasible || population->getIndividuBestValide() == NULL))
 	{
     if (population->getIndividuBestValide() != NULL && population->getIndividuBestValide()->coutSol.distance < params->cost_thresh) {
       std::cout << "Returning because we found a solution with cost lower than the provided threshold" << std::endl;
@@ -155,7 +154,6 @@ void Genetic::evolveILS ()
 	rejeton->localSearch->nbTotalRISinceBeginning = 0 ;
 	rejeton->localSearch->nbTotalPISinceBeginning = 0 ;
 	nbIter = 0 ;
-	clock_t debut = clock();
 	rejetonBestFoundAll->coutSol.evaluation = 1.e30 ;
 
 	cout << "| Debut evolution ILS | NbNodes : " << params->nbClients << " | NbVehicles : " << params->nbVehiculesPerDep << " | " << endl ;
@@ -172,7 +170,7 @@ void Genetic::evolveILS ()
 		rejetonBestFound->coutSol.evaluation = 1.e30 ;
 		isFirstLoop = true ;
 		
-		for (int nbGenerationNonProd = 0 ; nbGenerationNonProd < nbILS && (clock() - debut <= ticks) ; nbGenerationNonProd ++)
+		for (int nbGenerationNonProd = 0 ; nbGenerationNonProd < nbILS && (clock() - params->debut_time <= params->max_ticks) ; nbGenerationNonProd ++)
 		{
 			if (!isFirstLoop)
 			{
@@ -496,8 +494,8 @@ void Genetic::crossPIX ()
 	rejeton->updateIndiv();
 }
 
-Genetic::Genetic(Params * params,Population * population, clock_t ticks, bool traces) : 
-ticks(ticks), traces(traces), population(population), params(params)
+Genetic::Genetic(Params * params,Population * population, bool traces) : 
+traces(traces), population(population), params(params)
 {
 	for (int i=0 ; i < params->nbClients + params->nbDepots ; i++ )
 		freqClient.push_back(params->cli[i].freq);

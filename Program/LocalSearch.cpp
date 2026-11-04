@@ -67,14 +67,14 @@ int LocalSearch::mutationSameDay (int day)
 	Noeud * tempNoeud ;
 	int size2 ;
 
-	// We search and apply moves until a local minimum is attained
-	while (!rechercheTerminee)
+	// We search and apply moves until a local minimum is attained or time limit is reached
+	while (!rechercheTerminee && (clock() - params->debut_time <= params->max_ticks))
 	{
 		rechercheTerminee = true ;
 		moveEffectue = 0 ;
 
 		// For every node U in random order
-		for ( int posU = 0 ; posU < (int)ordreParcours[day].size() ; posU ++ )
+		for ( int posU = 0 ; posU < (int)ordreParcours[day].size() && (clock() - params->debut_time <= params->max_ticks); posU ++ )
 		{
 			posU -= moveEffectue ; // We return on the last node if there has been a move
 			nbMoves += moveEffectue ;
@@ -94,7 +94,7 @@ int LocalSearch::mutationSameDay (int day)
 
 			// For every node V in random order
 			size2 = (int)noeudU->moves.size();
-			for ( int posV = 0 ; posV < size2 && moveEffectue == 0 ; posV ++ )
+			for ( int posV = 0 ; posV < size2 && moveEffectue == 0 && (clock() - params->debut_time <= params->max_ticks); posV ++ )
 			{
 				noeudV = &clients[day][noeudU->moves[posV]] ;
 				routeV = noeudV->route ;
@@ -149,7 +149,7 @@ int LocalSearch::mutationSameDay (int day)
 			y = noeudV->suiv ;
 			if (!noeudV->route->nodeAndRouteTested[noeudU->cour])
 			{
-				while (moveEffectue != 1 && !noeudV->estUnDepot)
+				while (moveEffectue != 1 && !noeudV->estUnDepot && (clock() - params->debut_time <= params->max_ticks))
 				{ 
 					// Testing 2-Opt between U and V (if the restriction of the granular search allows) 
 					if (params->isCorrelated[noeudU->pred->cour][noeudV->cour] || params->isCorrelated[noeudU->cour][noeudV->suiv->cour]) 
@@ -160,7 +160,7 @@ int LocalSearch::mutationSameDay (int day)
 			}
 
 			// Special cases : testing the insertions behind the depot, and the empty routes
-			for (int route = 0 ; route < params->nbVehiculesPerDep && moveEffectue == 0 ; route ++)
+			for (int route = 0 ; route < params->nbVehiculesPerDep && moveEffectue == 0 && (clock() - params->debut_time <= params->max_ticks); route ++)
 			{
 				noeudV = &depots[day][route] ;
 				routeV = noeudV->route ;

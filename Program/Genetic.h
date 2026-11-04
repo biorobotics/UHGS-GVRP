@@ -43,9 +43,6 @@ private:
 
 public:
 
-	// allowed time
-    clock_t ticks ;
-
 	// printing search traces or not
 	bool traces ;
 
@@ -90,7 +87,7 @@ public:
 	void gererPenalites ();
 
 	// Constructor
-	Genetic(Params * params,Population * population, clock_t ticks, bool traces);
+	Genetic(Params * params,Population * population, bool traces);
 
 	// Destructor
 	~Genetic(void);

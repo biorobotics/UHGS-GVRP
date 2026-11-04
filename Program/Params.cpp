@@ -130,8 +130,9 @@ void Params::getClient (int i, Client * myCli)
 }
 
 // vc is vehicle capacity. Assume depot cluster is cluster 0 and depot node is node 0
-Params::Params(unsigned int seedRNG, int nbVeh, double vc, const Ref<const VectorXd> &demand_per_cluster, bool take_first_soln, const std::vector<std::vector<int>> &cluster_to_node_ptr, const std::vector<std::vector<double>> &cost_mat, double cost_thresh):nbVehiculesPerDep(nbVeh), nbDepots(1), isSearchingFeasible(false), cost_thresh(cost_thresh)
+Params::Params(unsigned int seedRNG, int nbVeh, double vc, const Ref<const VectorXd> &demand_per_cluster, bool take_first_soln, const std::vector<std::vector<int>> &cluster_to_node_ptr, const std::vector<std::vector<double>> &cost_mat, double cost_thresh, clock_t max_ticks):nbVehiculesPerDep(nbVeh), nbDepots(1), isSearchingFeasible(false), cost_thresh(cost_thresh), max_ticks(max_ticks)
 {
+  debut_time = clock();
 	// Main constructor of Params
 	borne = 2.0 ;
 	sizeSD = 10 ;

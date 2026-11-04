@@ -173,8 +173,11 @@ public:
 
   double cost_thresh;
 
+  clock_t max_ticks;
+  clock_t debut_time;
+
 	// constructor
-  Params(unsigned int seedRNG, int nbVeh, double vc, const Ref<const VectorXd> &demand_per_cluster, bool take_first_soln, const std::vector<std::vector<int>> &cluster_to_node_ptr, const std::vector<std::vector<double>> &cost_mat, double cost_thresh);
+  Params(unsigned int seedRNG, int nbVeh, double vc, const Ref<const VectorXd> &demand_per_cluster, bool take_first_soln, const std::vector<std::vector<int>> &cluster_to_node_ptr, const std::vector<std::vector<double>> &cost_mat, double cost_thresh, clock_t max_ticks);
 
 	// destructor
 	~Params(void);
